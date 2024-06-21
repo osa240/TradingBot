@@ -7,7 +7,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.gson.Gson;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
+import com.ua.osa.tradingbot.services.CollectDataService;
 import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
@@ -19,12 +21,15 @@ import reactor.core.publisher.Sinks;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class WebSocketClient {
     public static final String SENDED = "Sended: {}";
     public static final String RECEIVED = "Received: {}";
+
     private final Sinks.Many<String> messageSink = Sinks.many().multicast().onBackpressureBuffer();
     private final AtomicBoolean isReconnecting = new AtomicBoolean(false);
     private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
+    private final CollectDataService collectDataService;
 
     private WebSocketSession session = null;
 
@@ -88,6 +93,7 @@ public class WebSocketClient {
     private Mono<Void> handleMessage(String message) {
         return Mono.fromRunnable(() -> {
             logMessage(message, RECEIVED);
+            collectDataService.collectDataFromWebSocket(message);
         });
     }
 

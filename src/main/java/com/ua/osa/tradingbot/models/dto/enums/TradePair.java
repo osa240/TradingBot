@@ -4,6 +4,7 @@ public enum TradePair {
     BTC_USD,
     BTC_USDT,
     DBTC_DUSDT,
+    ETH_USD,
     ;
 
     String description;

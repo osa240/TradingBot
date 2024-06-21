@@ -4,23 +4,22 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 import java.util.Formatter;
+import java.util.Objects;
 import com.google.gson.Gson;
-import com.ua.osa.tradingbot.models.dto.balance.BalanceRequest;
+import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 
 public class AuthInterceptor implements RequestInterceptor {
-    private static final String BALANCE_METHOD = "/api/v4/trade-account/balance";
     private static final String API_KEY = "0027baf96b5b50a9ed888c2b33b5e8b2";
     private static final String API_SECRET = "f19d67c2a4c157613bc067897a02e983";
 
     @Override
     public void apply(RequestTemplate requestTemplate) {
         String path = requestTemplate.path();
-        if (path.contains(BALANCE_METHOD)) {
+        if (MethodEnum.isPrivateMethod(path)) {
             byte[] body = requestTemplate.body();
-            Gson gson = new Gson();
-            String bodyString = gson.toJson(gson.fromJson(new String(body), BalanceRequest.class));
+            String bodyString = getBodyString(body, path);
             String payload = getPayload(bodyString.getBytes());
             requestTemplate
                     .header("Content-type", "application/json")
@@ -28,6 +27,11 @@ public class AuthInterceptor implements RequestInterceptor {
                     .header("X-TXC-PAYLOAD", payload)
                     .header("X-TXC-SIGNATURE", calcSignature(payload));
         }
+    }
+
+    private String getBodyString(byte[] body, String path) {
+        Gson gson = new Gson();
+        return gson.toJson(gson.fromJson(new String(body), Objects.requireNonNull(MethodEnum.getSerializeClass(path))));
     }
 
     private String getPayload(byte[] bodyTemplate) {

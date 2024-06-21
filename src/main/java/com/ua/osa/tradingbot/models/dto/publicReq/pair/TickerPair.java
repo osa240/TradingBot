@@ -1,4 +1,4 @@
-package com.ua.osa.tradingbot.models.dto.pair;
+package com.ua.osa.tradingbot.models.dto.publicReq.pair;
 
 import java.math.BigDecimal;
 import com.ua.osa.tradingbot.models.dto.Ticker;

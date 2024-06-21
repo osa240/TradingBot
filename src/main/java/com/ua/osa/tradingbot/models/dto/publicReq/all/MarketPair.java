@@ -1,4 +1,4 @@
-package com.ua.osa.tradingbot.models.dto.all;
+package com.ua.osa.tradingbot.models.dto.publicReq.all;
 
 import com.ua.osa.tradingbot.models.dto.Ticker;
 import lombok.Data;

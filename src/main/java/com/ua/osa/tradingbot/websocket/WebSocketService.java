@@ -1,9 +1,11 @@
 package com.ua.osa.tradingbot.websocket;
 
-import com.ua.osa.tradingbot.websocket.protocol.SendMessage;
+import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class WebSocketService {
     private final WebSocketClient webSocketClient;
 
@@ -12,11 +14,10 @@ public class WebSocketService {
     }
 
     public void startWebSocketCommunication() {
-        String url = "wss://api.whitebit.com/ws";
-        webSocketClient.connect(url);
+        webSocketClient.connect();
     }
 
-    public void sendMessage(SendMessage message) {
+    public void sendMessage(MessageRequest message) {
         webSocketClient.sendMessage(message);
     }
 }

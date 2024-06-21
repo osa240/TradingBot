@@ -1,10 +1,12 @@
 package com.ua.osa.tradingbot.restClients;
 
 import java.util.Map;
-import com.ua.osa.tradingbot.models.dto.all.AllPairsResponse;
-import com.ua.osa.tradingbot.models.dto.balance.BalanceRequest;
-import com.ua.osa.tradingbot.models.dto.balance.BalanceResponse;
-import com.ua.osa.tradingbot.models.dto.pair.TickerPairResponse;
+import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
+import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderResponse;
+import com.ua.osa.tradingbot.models.dto.publicReq.all.AllPairsResponse;
+import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceRequest;
+import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceResponse;
+import com.ua.osa.tradingbot.models.dto.publicReq.pair.TickerPairResponse;
 import feign.Param;
 import feign.RequestLine;
 
@@ -14,8 +16,14 @@ public interface WhiteBitClient {
     AllPairsResponse getAllInfo();
 
     @RequestLine("GET /api/v1/public/ticker?market={pair}")
-    TickerPairResponse getPairInfo(@Param("pair") String pair);
+    TickerPairResponse getPairInfo(@Param("pair") String request);
 
     @RequestLine("POST /api/v4/trade-account/balance")
-    Map<String, BalanceResponse> getBalance(BalanceRequest pair);
+    Map<String, BalanceResponse> getAllBalances(BalanceRequest request);
+
+    @RequestLine("POST /api/v4/trade-account/balance")
+    BalanceResponse getBalance(BalanceRequest request);
+
+    @RequestLine("POST /api/v4/order/new")
+    LimitOrderResponse newLimitOrder(LimitOrderRequest request);
 }

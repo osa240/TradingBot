@@ -1,7 +1,10 @@
 package com.ua.osa.tradingbot.services;
 
-import com.ua.osa.tradingbot.models.dto.balance.BalanceRequest;
+import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
+import com.ua.osa.tradingbot.models.dto.enums.TickerEnum;
+import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceRequest;
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
+import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,17 @@ public class GetPriceCenterMainServiceImpl implements GetPriceCenterMainService 
     }
 
     @Override
-    public void showBalance() {
-        System.out.println(client.getBalance(new BalanceRequest("/api/v4/trade-account/balance")));
+    public void showAllBalances() {
+        System.out.println(client.getAllBalances(new BalanceRequest(MethodEnum.BALANCE.getMethod())));
+    }
+
+    @Override
+    public void showBalance(TickerEnum ticker) {
+        System.out.println(client.getBalance(new BalanceRequest(MethodEnum.BALANCE.getMethod(), ticker)));
+    }
+
+    @Override
+    public void createOrder(LimitOrderRequest order) {
+        System.out.println(client.newLimitOrder(order));
     }
 }

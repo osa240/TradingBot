@@ -14,12 +14,14 @@ import com.google.gson.reflect.TypeToken;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
 import com.ua.osa.tradingbot.websocket.protocol.dto.TradeDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CollectDataServiceImpl implements CollectDataService {
 
     private static final int TRADE_PAIR_POSITION = 0;
@@ -27,6 +29,7 @@ public class CollectDataServiceImpl implements CollectDataService {
 
     private final Map<String, List<BigDecimal>> lastPriceData = new ConcurrentHashMap<>();
     private final Map<String, List<TradeDto>> lastTradeData = new ConcurrentHashMap<>();
+    private final ProcessingService processingService;
 
 
     @Override
@@ -70,6 +73,7 @@ public class CollectDataServiceImpl implements CollectDataService {
                 lastPriceData.put(tradePair, lastPriceList);
             }
             lastPriceList.add(lastPrice);
+            processingService.processingLastPrice(lastPrice);
         }
     }
 

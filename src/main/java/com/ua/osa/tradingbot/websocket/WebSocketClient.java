@@ -4,74 +4,99 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.google.gson.Gson;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.services.CollectDataService;
 import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class WebSocketClient {
-    public static final String SENDED = "Sended: {}";
-    public static final String RECEIVED = "Received: {}";
+    private static final String URL = "wss://api.whitebit.com/ws";
+    private static final String SENDED = "Sended: {}";
+    private static final String RECEIVED = "Received: {}";
 
-    private final Sinks.Many<String> messageSink = Sinks.many().multicast().onBackpressureBuffer();
     private final AtomicBoolean isReconnecting = new AtomicBoolean(false);
     private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final AtomicReference<WebSocketSession> sessionRef = new AtomicReference<>(null);
+    private final AtomicReference<ReactorNettyWebSocketClient> client = new AtomicReference<>(null);
+    private final AtomicReference<Disposable> subscribe = new AtomicReference<>(null);
+    private final MessageRequest pingRequest = new MessageRequest(0, WebSocketMethodEnum.ping, new ArrayList<>());
     private final CollectDataService collectDataService;
+    private ScheduledFuture<?> reconnectTask;
 
-    private WebSocketSession session = null;
 
-    public void connect() {
-        ReactorNettyWebSocketClient client = new ReactorNettyWebSocketClient();
-        String url = "wss://api.whitebit.com/ws";
-        client.execute(
-                URI.create(url),
+    public WebSocketClient(CollectDataService collectDataService) {
+        this.collectDataService = collectDataService;
+        startReconnectTask();
+    }
+
+    public synchronized void connect() {
+        if (client.get() == null) {
+            client.set(new ReactorNettyWebSocketClient());
+        }
+        if (sessionRef.get() != null && sessionRef.get().isOpen()) {
+            log.info("WebSocket session is already open.");
+            return;
+        }
+
+        if (subscribe.get() != null) {
+            subscribe.get().dispose();
+        }
+
+        Disposable subscribe = client.get().execute(
+                URI.create(URL),
                 this::handleSession
         ).doOnError(error -> {
             log.error("Connection error: " + error.getMessage());
             reconnect();
         }).subscribe();
+
+        this.subscribe.set(subscribe);
     }
 
-    public void sendMessage(MessageRequest message) {
+    public synchronized void sendMessage(MessageRequest message) {
         String payload = getPayload(message);
-        if (this.session != null && this.session.isOpen()) {
-            this.messageSink.tryEmitNext(payload);
+        if (this.sessionRef.get() != null && this.sessionRef.get().isOpen()) {
+            sessionRef.get().send(Mono.just(sessionRef.get().textMessage(payload)))
+                    .doOnError(error -> {
+                        log.error("Send error: " + error.getMessage());
+                        reconnectAndSend(payload);
+                    }).subscribe();
         } else {
-            reconnect();
-            this.messageQueue.add(payload);
+            reconnectAndSend(payload);
         }
     }
 
+    private void startReconnectTask() {
+        reconnectTask = scheduler.scheduleAtFixedRate(this::checkAndReconnect, 0, 30, TimeUnit.SECONDS);
+    }
+
     private Mono<Void> handleSession(WebSocketSession session) {
-        this.session = session;
-        MessageRequest messageRequest = new MessageRequest(0, WebSocketMethodEnum.ping, new ArrayList<>());
+        sessionRef.set(session);
 
-        Mono<Void> send = session.send(
-                Flux.interval(Duration.ofSeconds(50))
-                        .map(time -> session.textMessage(getPayload(messageRequest)))
-                        .mergeWith(messageSink.asFlux()
-                                .map(session::textMessage))
-
-        ).then().doOnTerminate(() -> {
-            while (!messageQueue.isEmpty()) {
-                messageSink.tryEmitNext(messageQueue.poll());
-            }
-        });
-
-        Mono<Void> receive = session.receive()
+        Mono<Void> send = sessionRef.get().send(
+                Flux.interval(Duration.ofSeconds(29))
+                        .map(time -> sessionRef.get().textMessage(getPayload(pingRequest)))
+                        .mergeWith(Flux.fromIterable(messageQueue).map(sessionRef.get()::textMessage))
+        );
+        Mono<Void> receive = sessionRef.get().receive()
                 .map(WebSocketMessage::getPayloadAsText)
                 .flatMap(this::handleMessage)
                 .then();
@@ -97,17 +122,34 @@ public class WebSocketClient {
         });
     }
 
-    private void reconnect() {
+    private synchronized void checkAndReconnect() {
+        if (sessionRef.get() == null || !sessionRef.get().isOpen()) {
+            log.warn("Session is closed. Reconnecting...");
+            reconnect();
+        }
+    }
+
+    public synchronized void reconnect() {
         if (isReconnecting.compareAndSet(false, true)) {
             log.warn("Reconnecting...");
-            // Wait for a few seconds before reconnecting
             try {
+                if (sessionRef.get() != null) {
+                    sessionRef.get().close().subscribe();
+                }
                 Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                log.error("Error closing session: " + e.getMessage());
+            } finally {
+                connect();
+                isReconnecting.set(false);
+                sessionRef.set(null);
+                client.set(null);
             }
-            connect();
-            isReconnecting.set(false);
         }
+    }
+
+    private synchronized  void reconnectAndSend(String message) {
+        reconnect();
+        messageQueue.add(message);
     }
 }

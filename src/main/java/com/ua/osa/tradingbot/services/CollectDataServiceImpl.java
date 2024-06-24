@@ -34,12 +34,16 @@ public class CollectDataServiceImpl implements CollectDataService {
 
     @Override
     public synchronized void collectDataFromWebSocket(String message) {
-        if (message != null) {
-            if (message.contains(WebSocketMethodEnum.lastprice_subscribe.getMethod())) {
-                collectLastPrice(message);
-            } else if (message.contains(WebSocketMethodEnum.trades_subscribe.getMethod())) {
-                collectTrades(message);
+        try {
+            if (message != null) {
+                if (message.contains(WebSocketMethodEnum.lastprice_subscribe.getMethod())) {
+                    collectLastPrice(message);
+                } else if (message.contains(WebSocketMethodEnum.trades_subscribe.getMethod())) {
+                    collectTrades(message);
+                }
             }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 

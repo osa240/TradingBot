@@ -6,5 +6,4 @@ import java.util.List;
 public interface ProcessingService {
 
     void processingLastPrice(BigDecimal price);
-    void processingLastPrice(List<BigDecimal> price);
 }

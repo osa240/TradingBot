@@ -4,6 +4,7 @@ import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import com.ua.osa.tradingbot.models.dto.enums.TickerEnum;
 import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceRequest;
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
+import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceResponse;
 import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +32,8 @@ public class GetPriceCenterMainServiceImpl implements GetPriceCenterMainService 
     }
 
     @Override
-    public void showBalance(TickerEnum ticker) {
-        System.out.println(client.getBalance(new BalanceRequest(MethodEnum.BALANCE.getMethod(), ticker)));
+    public BalanceResponse showBalance(TickerEnum ticker) {
+        return client.getBalance(new BalanceRequest(MethodEnum.BALANCE.getMethod(), ticker));
     }
 
     @Override

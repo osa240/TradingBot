@@ -14,7 +14,7 @@ public class LimitOrderResponse {
     private String clientOrderId;
     private TradePair market;
     private SideEnum side;
-    private Date timestamp;
+    private String timestamp;
     private BigDecimal dealMoney;
     private BigDecimal dealStock;
     private BigDecimal amount;

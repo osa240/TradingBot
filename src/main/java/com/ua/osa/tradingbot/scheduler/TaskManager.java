@@ -1,10 +1,7 @@
 package com.ua.osa.tradingbot.scheduler;
 
-import com.ua.osa.tradingbot.websocket.WebSocketService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
@@ -17,13 +14,6 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TaskManager {
     private final ThreadPoolTaskScheduler taskScheduler;
-    private final TaskFactory taskFactory;
-
-    @PostConstruct
-    private void autoStart() {
-        this.execute(taskFactory.createWebSocketConnectionTask());
-    }
-
 
     // Запуск задачи немедленно
     public ScheduledFuture<?> execute(Runnable task) {

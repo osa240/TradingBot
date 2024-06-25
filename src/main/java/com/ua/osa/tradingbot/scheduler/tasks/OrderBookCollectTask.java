@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class StartWorkTask implements Runnable {
+public class OrderBookCollectTask implements Runnable {
     private static final BigDecimal THRESHOLD = new BigDecimal("0.05"); // Порог для дисбаланса объема
 
     @Autowired

@@ -2,6 +2,7 @@ package com.ua.osa.tradingbot.websocket;
 
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -18,6 +19,13 @@ import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.scheduler.TaskManager;
 import com.ua.osa.tradingbot.services.CollectDataService;
 import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.SingletonDnsServerAddressStreamProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,6 +35,8 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.tcp.TcpClient;
 
 @Component
 @Slf4j
@@ -47,7 +57,7 @@ public class WebSocketClient {
 
     public synchronized void connect() {
         if (client.get() == null) {
-            client.set(new ReactorNettyWebSocketClient());
+            client.set(initializeClient());
         }
         if (sessionRef.get() != null && sessionRef.get().isOpen()) {
             log.info("WebSocket session is already open.");
@@ -104,7 +114,7 @@ public class WebSocketClient {
                 .then();
 
         sessionRef.set(session);
-        if (isReconnecting.get()) {
+//        if (isReconnecting.get()) {
             taskManager.schedule(() -> {
                 log.info("Restart all subscribes");
 
@@ -113,7 +123,7 @@ public class WebSocketClient {
                     sendMessage(new MessageRequest(0, webSocketMethodEnum, List.of(tradePair)));
                 }
             }, 5000, TimeUnit.MILLISECONDS);
-        }
+//        }
 
         log.info("WebSocketConnection established");
         return Mono.zip(send, receive).then();
@@ -143,7 +153,7 @@ public class WebSocketClient {
         }
     }
 
-    public synchronized void reconnect() {
+    private synchronized void reconnect() {
         if (isReconnecting.compareAndSet(false, true)) {
             log.warn("Reconnecting...");
             try {
@@ -168,7 +178,7 @@ public class WebSocketClient {
         messageQueue.add(message);
     }
 
-    public void clearDnsCache() {
+    private void clearDnsCache() {
         try {
             Class<InetAddress> klass = InetAddress.class;
             Method clearCache = klass.getDeclaredMethod("clearCache");
@@ -177,5 +187,37 @@ public class WebSocketClient {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private ReactorNettyWebSocketClient initializeClient() {
+        SslContext sslContext;
+        try {
+            sslContext = SslContextBuilder.forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create SSL context", e);
+        }
+
+        // Create custom DNS server address stream provider
+        SingletonDnsServerAddressStreamProvider dnsServerAddressStreamProvider =
+                new SingletonDnsServerAddressStreamProvider(new InetSocketAddress("8.8.8.8", 53));
+
+        // Create DNS resolver
+        DnsNameResolverBuilder dnsResolverBuilder = new DnsNameResolverBuilder()
+                .channelType(NioDatagramChannel.class)
+                .nameServerProvider(dnsServerAddressStreamProvider);
+
+        // Create TcpClient with DNS configuration
+        TcpClient tcpClient = TcpClient.create()
+                .resolver(spec -> spec.dnsAddressResolverGroupProvider(DnsAddressResolverGroup::new))
+                .secure(sslContextSpec -> sslContextSpec.sslContext(sslContext));
+
+        // Create HttpClient with TcpClient
+        HttpClient httpClient = HttpClient.from(tcpClient)
+                .wiretap(true)
+                .responseTimeout(Duration.ofSeconds(10));
+
+        // Create ReactorNettyWebSocketClient with HttpClient
+        return new ReactorNettyWebSocketClient(httpClient);
     }
 }

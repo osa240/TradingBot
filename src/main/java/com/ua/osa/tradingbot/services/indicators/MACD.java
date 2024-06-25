@@ -26,7 +26,7 @@ public class MACD {
                 .collect(Collectors.toList()).getLast();
     }
 
-    private static List<BigDecimal> calculateEMA(List<BigDecimal> prices, int period) {
+    public static List<BigDecimal> calculateEMA(List<BigDecimal> prices, int period) {
         final BigDecimal multiplier = BigDecimal.valueOf(2).divide(BigDecimal.valueOf(period + 1), 10, RoundingMode.HALF_UP);
         final BigDecimal[] previousEMA = {prices.stream()
                 .limit(period)
@@ -43,6 +43,16 @@ public class MACD {
                     return previousEMA[0];
                 })
                 .collect(Collectors.toList());
+    }
+
+    public BigDecimal calculateEMAOrdinary(List<BigDecimal> prices, int period) {
+        BigDecimal multiplier = BigDecimal.valueOf(2.0 / (period + 1));
+        BigDecimal ema = prices.get(0); // начальное значение EMA
+
+        for (int i = 1; i < prices.size(); i++) {
+            ema = prices.get(i).subtract(ema).multiply(multiplier).add(ema);
+        }
+        return ema;
     }
 
     public static class MACDResult {

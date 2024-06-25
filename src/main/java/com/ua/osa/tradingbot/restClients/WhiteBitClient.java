@@ -6,6 +6,7 @@ import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderResponse
 import com.ua.osa.tradingbot.models.dto.publicReq.all.AllPairsResponse;
 import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceRequest;
 import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceResponse;
+import com.ua.osa.tradingbot.models.dto.publicReq.orderbook.OrderBookDto;
 import com.ua.osa.tradingbot.models.dto.publicReq.pair.TickerPairResponse;
 import feign.Param;
 import feign.RequestLine;
@@ -16,7 +17,10 @@ public interface WhiteBitClient {
     AllPairsResponse getAllInfo();
 
     @RequestLine("GET /api/v1/public/ticker?market={pair}")
-    TickerPairResponse getPairInfo(@Param("pair") String request);
+    TickerPairResponse getPairInfo(@Param("pair") String pair);
+
+    @RequestLine("GET /api/v4/public/orderbook/{pair}")
+    OrderBookDto getOrderBook(@Param("pair") String pair);
 
     @RequestLine("POST /api/v4/trade-account/balance")
     Map<String, BalanceResponse> getAllBalances(BalanceRequest request);

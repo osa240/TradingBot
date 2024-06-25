@@ -5,6 +5,7 @@ public enum WebSocketMethodEnum {
     ping,
     lastprice_subscribe("lastprice_update"),
     market_subscribe,
+    candles_subscribe("candles_update"),
     marketToday_subscribe;
 
     private String method;

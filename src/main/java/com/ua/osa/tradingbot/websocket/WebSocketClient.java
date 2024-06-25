@@ -1,20 +1,24 @@
 package com.ua.osa.tradingbot.websocket;
 
+import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.Gson;
+import com.ua.osa.tradingbot.AppProperties;
+import com.ua.osa.tradingbot.models.dto.enums.TradePair;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
+import com.ua.osa.tradingbot.scheduler.TaskManager;
 import com.ua.osa.tradingbot.services.CollectDataService;
 import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketMessage;
@@ -26,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class WebSocketClient {
     private static final String URL = "wss://api.whitebit.com/ws";
     private static final String SENDED = "Sended: {}";
@@ -33,19 +38,12 @@ public class WebSocketClient {
 
     private final AtomicBoolean isReconnecting = new AtomicBoolean(false);
     private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final AtomicReference<WebSocketSession> sessionRef = new AtomicReference<>(null);
     private final AtomicReference<ReactorNettyWebSocketClient> client = new AtomicReference<>(null);
     private final AtomicReference<Disposable> subscribe = new AtomicReference<>(null);
     private final MessageRequest pingRequest = new MessageRequest(0, WebSocketMethodEnum.ping, new ArrayList<>());
     private final CollectDataService collectDataService;
-    private ScheduledFuture<?> reconnectTask;
-
-
-    public WebSocketClient(CollectDataService collectDataService) {
-        this.collectDataService = collectDataService;
-        startReconnectTask();
-    }
+    private final TaskManager taskManager;
 
     public synchronized void connect() {
         if (client.get() == null) {
@@ -84,22 +82,38 @@ public class WebSocketClient {
         }
     }
 
-    private void startReconnectTask() {
-        reconnectTask = scheduler.scheduleAtFixedRate(this::checkAndReconnect, 0, 30, TimeUnit.SECONDS);
-    }
-
     private Mono<Void> handleSession(WebSocketSession session) {
-        sessionRef.set(session);
 
-        Mono<Void> send = sessionRef.get().send(
-                Flux.interval(Duration.ofSeconds(29))
-                        .map(time -> sessionRef.get().textMessage(getPayload(pingRequest)))
-                        .mergeWith(Flux.fromIterable(messageQueue).map(sessionRef.get()::textMessage))
+        Mono<Void> send = session.send(
+                Flux.interval(Duration.ofSeconds(59))
+                        .map(time -> {
+                            if (!AppProperties.isInternetAvailable())
+                                throw new RuntimeException("The internet is unreachable");
+                            return session.textMessage(getPayload(pingRequest));
+                        }).mergeWith(Flux.fromIterable(messageQueue)
+                        .map(session::textMessage))
+                        .doOnError(error -> {
+                            log.error("Send error: " + error.getMessage());
+                            this.sessionRef.set(null);
+                            reconnectAndSend(getPayload(pingRequest));
+                })
         );
-        Mono<Void> receive = sessionRef.get().receive()
+        Mono<Void> receive = session.receive()
                 .map(WebSocketMessage::getPayloadAsText)
                 .flatMap(this::handleMessage)
                 .then();
+
+        sessionRef.set(session);
+        if (isReconnecting.get()) {
+            taskManager.schedule(() -> {
+                log.info("Restart all subscribes");
+
+                TradePair tradePair = AppProperties.TRADE_PAIR.get();
+                for (WebSocketMethodEnum webSocketMethodEnum : AppProperties.SUBSCRIBES.get()) {
+                    sendMessage(new MessageRequest(0, webSocketMethodEnum, List.of(tradePair)));
+                }
+            }, 5000, TimeUnit.MILLISECONDS);
+        }
 
         log.info("WebSocketConnection established");
         return Mono.zip(send, receive).then();
@@ -140,6 +154,7 @@ public class WebSocketClient {
             } catch (Exception e) {
                 log.error("Error closing session: " + e.getMessage());
             } finally {
+                clearDnsCache();
                 connect();
                 isReconnecting.set(false);
                 sessionRef.set(null);
@@ -148,8 +163,19 @@ public class WebSocketClient {
         }
     }
 
-    private synchronized  void reconnectAndSend(String message) {
+    private synchronized void reconnectAndSend(String message) {
         reconnect();
         messageQueue.add(message);
+    }
+
+    public void clearDnsCache() {
+        try {
+            Class<InetAddress> klass = InetAddress.class;
+            Method clearCache = klass.getDeclaredMethod("clearCache");
+            clearCache.setAccessible(true);
+            clearCache.invoke(null);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
     }
 }

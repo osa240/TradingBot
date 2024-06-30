@@ -128,13 +128,20 @@ public class StrategyServiceImpl implements StrategyService {
                 wait++;
             }
         }
-        OperationEnum result = null;
-        if (entire > exit && entire > wait) {
-            result = OperationEnum.BUY;
-        } else if (exit > entire && exit > wait) {
-            result = OperationEnum.SELL;
-        } else result = OperationEnum.BUY;
-        return result;
+        log.info("Результаты:");
+        log.info("За покупку: {}.", entire);
+        log.info("За продажу: {}.", exit);
+        log.info("За ожидание: {}.", wait);
+        log.info("-----------------");
+        if (entire > 3) {
+            log.info("Решение о покупке принято.");
+            return OperationEnum.BUY;
+        } else if (exit > 3) {
+            log.info("Решение о продаже принято.");
+            return OperationEnum.SELL;
+        }
+        log.info("Решение о ожидании принято.");
+        return OperationEnum.WAIT;
     }
 
     private void initializeIndicators(BarSeries series) {

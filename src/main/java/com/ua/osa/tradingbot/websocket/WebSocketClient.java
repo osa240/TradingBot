@@ -95,7 +95,7 @@ public class WebSocketClient {
     private Mono<Void> handleSession(WebSocketSession session) {
 
         Mono<Void> send = session.send(
-                Flux.interval(Duration.ofSeconds(59))
+                Flux.interval(Duration.ofSeconds(29))
                         .map(time -> {
                             if (!AppProperties.isInternetAvailable())
                                 throw new RuntimeException("The internet is unreachable");
@@ -106,7 +106,7 @@ public class WebSocketClient {
                             log.error("Send error: " + error.getMessage());
                             this.sessionRef.set(null);
                             reconnectAndSend(getPayload(pingRequest));
-                })
+                        })
         );
         Mono<Void> receive = session.receive()
                 .map(WebSocketMessage::getPayloadAsText)
@@ -114,17 +114,20 @@ public class WebSocketClient {
                 .then();
 
         sessionRef.set(session);
-//        if (isReconnecting.get()) {
-            taskManager.schedule(() -> {
-                log.info("Restart all subscribes");
+        taskManager.schedule(() -> {
+            log.info("Restart all subscribes");
 
-                TradePair tradePair = AppProperties.TRADE_PAIR.get();
-                for (WebSocketMethodEnum webSocketMethodEnum : AppProperties.SUBSCRIBES.get()) {
-                    sendMessage(new MessageRequest(0, webSocketMethodEnum, List.of(tradePair)));
+            TradePair tradePair = AppProperties.TRADE_PAIR.get();
+            for (WebSocketMethodEnum webSocketMethodEnum : AppProperties.SUBSCRIBES.get()) {
+                if (webSocketMethodEnum.equals(WebSocketMethodEnum.lastprice_subscribe)) {
+                    sendMessage(new MessageRequest(1, webSocketMethodEnum, List.of(tradePair)));
+                } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.candles_subscribe)) {
+                    sendMessage(new MessageRequest(2, webSocketMethodEnum, List.of(tradePair, 300)));
+                } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.depth_subscribe)) {
+                    sendMessage(new MessageRequest(3, webSocketMethodEnum, List.of(tradePair, 100, "0.1", true)));
                 }
-            }, 5000, TimeUnit.MILLISECONDS);
-//        }
-
+            }
+        }, 15000, TimeUnit.MILLISECONDS);
         log.info("WebSocketConnection established");
         return Mono.zip(send, receive).then();
     }

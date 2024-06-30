@@ -15,8 +15,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AppProperties {
     public static final AtomicReference<TradePair> TRADE_PAIR = new AtomicReference<>(TradePair.BTC_USDT);
-    public static final AtomicReference<BigDecimal> BUY_AMOUNT = new AtomicReference<>(BigDecimal.ZERO);
-    public static final AtomicReference<BigDecimal> BUY_PRICE = new AtomicReference<>(BigDecimal.ZERO);
     public static final AtomicReference<OrderBookStatusEnum> ORDERBOOK_SIGNAL = new AtomicReference<>(OrderBookStatusEnum.hold);
     public static final AtomicReference<Set<WebSocketMethodEnum>> SUBSCRIBES = new AtomicReference<>(new HashSet<>());
 

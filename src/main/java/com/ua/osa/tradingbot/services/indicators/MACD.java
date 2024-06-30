@@ -45,12 +45,22 @@ public class MACD {
                 .collect(Collectors.toList());
     }
 
-    public BigDecimal calculateEMAOrdinary(List<BigDecimal> prices, int period) {
+    public BigDecimal calculateEMAOrdinaryBD(List<BigDecimal> prices, int period) {
         BigDecimal multiplier = BigDecimal.valueOf(2.0 / (period + 1));
         BigDecimal ema = prices.get(0); // начальное значение EMA
 
         for (int i = 1; i < prices.size(); i++) {
             ema = prices.get(i).subtract(ema).multiply(multiplier).add(ema);
+        }
+        return ema;
+    }
+
+    public double calculateEMAOrdinary(List<Double> data, int period) {
+        double multiplier = 2.0 / (period + 1);
+        double ema = data.get(0); // начальное значение EMA
+
+        for (int i = 1; i < data.size(); i++) {
+            ema = ((data.get(i) - ema) * multiplier) + ema;
         }
         return ema;
     }

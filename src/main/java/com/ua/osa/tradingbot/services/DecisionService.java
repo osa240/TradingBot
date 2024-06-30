@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface DecisionService {
     void makeDecisionByPriceHistory(List<BigDecimal> prices, TradePair pair);
-    void makeDecisionByIndicators(BarSeries series, BigDecimal lastPrice, TradePair pair);
+    void makeDecisionByIndicators(BarSeries series);
 }

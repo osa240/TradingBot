@@ -1,11 +1,11 @@
 package com.ua.osa.tradingbot.models.dto.enums;
 
 public enum TradePair {
-    BTC_USD,
-    BTC_USDT,
     DBTC_DUSDT,
+    BTC_USDT,
+    BTC_USD,
     NOT_USDT,
-    ETH_USD,
+    ETH_USD
     ;
 
     String description;

@@ -17,6 +17,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
+import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
+import com.ua.osa.tradingbot.restClients.WhiteBitClient;
 import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
 import com.ua.osa.tradingbot.websocket.protocol.dto.TradeDto;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,8 @@ public class CollectDataServiceImpl implements CollectDataService {
     private final Map<String, List<TradeDto>> lastTradeData = new ConcurrentHashMap<>();
     private final ProcessingService processingService;
     private final AtomicReference<BarSeries> series = new AtomicReference<>(new BaseBarSeries("symbol"));
+    private final WhiteBitClient whiteBitClient;
+    private final OrderBookService orderBookService;
 
     @Override
     public synchronized void collectDataFromWebSocket(String message) {
@@ -99,9 +103,27 @@ public class CollectDataServiceImpl implements CollectDataService {
     }
 
     private void collectCandles(String message) {
+        BarSeries barSeries = series.get();
+        if (series.get().isEmpty()) {
+            KlineResponse response = whiteBitClient.getKlains(AppProperties.TRADE_PAIR.get().name(), "5m", "1440");
+            for (List<Object> kline : response.getResult()) {
+                long timestamp = ((Number) kline.get(0)).longValue();
+                ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());
+                Num open = DecimalNum.valueOf((String) kline.get(1));
+                Num high = DecimalNum.valueOf((String) kline.get(3));
+                Num low = DecimalNum.valueOf((String) kline.get(4));
+                Num close = DecimalNum.valueOf((String) kline.get(2));
+                Num volumeInStock = DecimalNum.valueOf((String) kline.get(5));
+                Num volumeInMoney = DecimalNum.valueOf((String) kline.get(6));
+                BaseBar bar = new BaseBar(
+                        Duration.ofMinutes(5),
+                        endTime, open, high, low, close, volumeInStock, volumeInMoney
+                );
+                addNewBar(barSeries, bar);
+            }
+        }
         JsonElement paramsElement = JsonParser.parseString(message).getAsJsonObject().get("params");
         JsonArray paramsArray = paramsElement.getAsJsonArray();
-        BarSeries barSeries = series.get();
         for (JsonElement jsonElement : paramsArray.asList()) {
             JsonArray asJsonArray = jsonElement.getAsJsonArray();
 
@@ -111,9 +133,17 @@ public class CollectDataServiceImpl implements CollectDataService {
             Num high = DecimalNum.valueOf(asJsonArray.get(3).getAsDouble());
             Num low = DecimalNum.valueOf(asJsonArray.get(4).getAsDouble());
             Num close = DecimalNum.valueOf(asJsonArray.get(2).getAsDouble());
-            Num volume = DecimalNum.valueOf(asJsonArray.get(6).getAsDouble());
+            Num volumeInStock = DecimalNum.valueOf(asJsonArray.get(5).getAsDouble());
+            Num volumeInMoney = DecimalNum.valueOf(asJsonArray.get(6).getAsDouble());
 
-            BaseBar bar = new BaseBar(Duration.ofMinutes(1), endTime, open, high, low, close, volume, volume);
+            BaseBar bar = new BaseBar(Duration.ofMinutes(1), endTime, open, high, low, close, volumeInStock, volumeInMoney);
+            addNewBar(barSeries, bar);
+        }
+        processingService.processingKlains(barSeries);
+    }
+
+    private void addNewBar(BarSeries barSeries, BaseBar bar) {
+        try {
             if (!barSeries.isEmpty()) {
                 Bar lastBar = barSeries.getLastBar();
                 if (lastBar.getEndTime().isEqual(bar.getEndTime())) {
@@ -124,6 +154,8 @@ public class CollectDataServiceImpl implements CollectDataService {
             } else {
                 barSeries.addBar(bar);
             }
+        } catch (Exception e) {
+            log.error("Duplicate bar");
         }
         processingService.processingKlains(barSeries);
     }

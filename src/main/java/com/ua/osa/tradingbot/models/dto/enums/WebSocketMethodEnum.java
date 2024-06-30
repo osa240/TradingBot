@@ -6,6 +6,7 @@ public enum WebSocketMethodEnum {
     lastprice_subscribe("lastprice_update"),
     market_subscribe,
     candles_subscribe("candles_update"),
+    depth_subscribe("depth_update"),
     marketToday_subscribe;
 
     private String method;

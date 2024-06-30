@@ -16,6 +16,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import com.ua.osa.tradingbot.AppProperties;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
@@ -57,10 +58,12 @@ public class CollectDataServiceImpl implements CollectDataService {
                     collectTrades(message);
                 } else if (message.contains(WebSocketMethodEnum.candles_subscribe.getMethod())) {
                     collectCandles(message);
+                } else if (message.contains(WebSocketMethodEnum.depth_subscribe.getMethod())) {
+                    orderBookService.updateOrderBook(message);
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -157,7 +160,6 @@ public class CollectDataServiceImpl implements CollectDataService {
         } catch (Exception e) {
             log.error("Duplicate bar");
         }
-        processingService.processingKlains(barSeries);
     }
 
     private BigDecimal getBigDecimalFromParams(List<Object> params) {

@@ -1,9 +1,13 @@
 package com.ua.osa.tradingbot.services;
 
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
+import com.ua.osa.tradingbot.models.entity.StrategyStatistic;
+import com.ua.osa.tradingbot.repository.StrategyStatisticRepository;
+import com.ua.osa.tradingbot.scheduler.TaskManager;
 import com.ua.osa.tradingbot.services.ai.AiService;
 import com.ua.osa.tradingbot.services.ai.dto.OperationEnum;
 import com.ua.osa.tradingbot.services.indicators.FibonacciRetracementLevels;
+import com.ua.osa.tradingbot.services.indicators.IndicatorEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,9 +23,12 @@ import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.indicators.helpers.VolumeIndicator;
 import org.ta4j.core.indicators.statistics.StandardDeviationIndicator;
 import org.ta4j.core.num.Num;
-import ta4jexamples.strategies.*;
 
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
+
+import static com.ua.osa.tradingbot.services.ai.dto.OperationEnum.*;
 
 @Component
 @Slf4j
@@ -98,19 +105,14 @@ public class StrategyServiceImpl implements StrategyService {
     private FibonacciRetracementLevels fibRetracement;
 
     private final AiService aiService;
+    private final TaskManager taskManager;
+    private final StrategyStatisticRepository repository;
 
     @Override
     public OperationEnum getOperationByLastKline(BarSeries series) {
         this.ai = aiService.getRecommendedOperation(series);
-//        initializeIndicators(series);
-        List<Strategy> strategies = List.of(
-                ADXStrategy.buildStrategy(series),
-                CCICorrectionStrategy.buildStrategy(series),
-                GlobalExtremaStrategy.buildStrategy(series),
-                MovingMomentumStrategy.buildStrategy(series),
-                RSI2Strategy.buildStrategy(series),
-                UnstableIndicatorStrategy.buildStrategy(series)
-        );
+
+        final List<Strategy> strategies = IndicatorEnum.buildIndicatorStrategies(series);
         int entire = 0;
         int exit = 0;
         int wait = 0;
@@ -119,29 +121,72 @@ public class StrategyServiceImpl implements StrategyService {
             case SELL -> exit++;
             case WAIT -> wait++;
         }
+        int endIndex = series.getEndIndex();
+        log.info("-----------------");
+        log.info("AI: {}.", this.ai);
+        StrategyStatistic strategyStatistic = new StrategyStatistic();
+        strategyStatistic.setAi(this.ai.ordinal());
+        strategyStatistic.setClosePrice(BigDecimal.valueOf(series.getLastBar().getClosePrice().doubleValue()));
         for (Strategy strategy : strategies) {
-            if (strategy.shouldEnter(series.getEndIndex())) {
+            int result = 0;
+            if (strategy.shouldEnter(endIndex)) {
                 entire++;
-            } else if (strategy.shouldExit(series.getEndIndex())) {
+                log.info("{}: {}", strategy.getName(), BUY.name());
+                result = 1;
+            } else if (strategy.shouldExit(endIndex)) {
                 exit++;
+                log.info("{}: {}", strategy.getName(), SELL.name());
+                result = 2;
             } else {
                 wait++;
+                log.info("{}: {}", strategy.getName(), WAIT.name());
             }
+            addStrategyResult(strategy, strategyStatistic, result);
         }
-        log.info("Результаты:");
-        log.info("За покупку: {}.", entire);
-        log.info("За продажу: {}.", exit);
-        log.info("За ожидание: {}.", wait);
         log.info("-----------------");
+        log.info("Results:");
+        log.info("For BUY: {}.", entire);
+        log.info("For SELL: {}.", exit);
+        log.info("For WAIT: {}.", wait);
+
+        OperationEnum result = WAIT;
         if (entire > 3) {
-            log.info("Решение о покупке принято.");
-            return OperationEnum.BUY;
+            log.info("BUYING...");
+            result = BUY;
         } else if (exit > 3) {
-            log.info("Решение о продаже принято.");
-            return OperationEnum.SELL;
+            log.info("SELLING...");
+            result = OperationEnum.SELL;
         }
-        log.info("Решение о ожидании принято.");
-        return OperationEnum.WAIT;
+        log.info("WAITING...");
+
+        taskManager.execute(() -> {
+            try {
+                strategyStatistic.setTimestamp(new Date());
+
+                repository.save(strategyStatistic);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        });
+
+        return result;
+    }
+
+    private void addStrategyResult(Strategy strategy, StrategyStatistic strategyStatistic, int tmp) {
+        String strategyName = strategy.getName();
+        if (IndicatorEnum.MA.name().equals(strategyName)) {
+            strategyStatistic.setMa(tmp);
+        } else if (IndicatorEnum.BOLLINGER_BANDS.name().equals(strategyName)) {
+            strategyStatistic.setBb(tmp);
+        } else if (IndicatorEnum.RSI.name().equals(strategyName)) {
+            strategyStatistic.setRsi(tmp);
+        } else if (IndicatorEnum.MACD.name().equals(strategyName)) {
+            strategyStatistic.setMacd(tmp);
+        } else if (IndicatorEnum.STOCHASTIC_OSCILLATOR.name().equals(strategyName)) {
+            strategyStatistic.setStockRsi(tmp);
+        } else if (IndicatorEnum.ADX.name().equals(strategyName)) {
+            strategyStatistic.setAdx(tmp);
+        }
     }
 
     private void initializeIndicators(BarSeries series) {
@@ -167,6 +212,6 @@ public class StrategyServiceImpl implements StrategyService {
         this.upperBand = new BollingerBandsUpperIndicator(middleBand, standardDeviation, factor);
         this.lowerBand = new BollingerBandsLowerIndicator(middleBand, standardDeviation, factor);
         this.fibRetracement = new FibonacciRetracementLevels(series, 4);
-
+        // TODO: 03.07.2024
     }
 }

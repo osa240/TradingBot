@@ -7,8 +7,8 @@ import com.ua.osa.tradingbot.restClients.WhiteBitClient;
 import com.ua.osa.tradingbot.scheduler.TaskManager;
 import com.ua.osa.tradingbot.services.ai.dto.EducateModel;
 import com.ua.osa.tradingbot.services.ai.dto.OperationEnum;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -17,12 +17,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.model.stats.StatsListener;
-import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
 import org.deeplearning4j.util.ModelSerializer;
-import org.jetbrains.annotations.NotNull;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -54,6 +49,8 @@ import java.util.*;
 @Slf4j
 public class AiService {
     private final String modelPath = "D:\\tradingModel.zip";
+    private final String modelPathUi = "D:\\tradingModelUI";
+    private final String prop = "D:\\dl4j-ui-conf.xml";
     private final MultiLayerNetwork model;
     private final WhiteBitClient whiteBitClient;
     private final TaskManager taskManager;
@@ -68,23 +65,20 @@ public class AiService {
             model = loadModel();
             System.out.println("Model loaded from file.");
 
-            adminConsoleOn();
         } else {
             double[] classWeightsArray = {1.0, 0.1, 0.1};
             INDArray classWeights = Nd4j.create(classWeightsArray);
 
             model = getMultiLayerNetworkMultiClass();
-
             model.init();
-            model.setListeners(new ScoreIterationListener(100));
 
-            adminConsoleOn();
-
-            try {
-                educateModel(null);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-            }
+            taskManager.execute(() -> {
+                try {
+                    educateModel(null);
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            });
         }
     }
 
@@ -237,16 +231,6 @@ public class AiService {
         log.warn("AI model has been created... Time: " + LocalDateTime.now().toString());
     }
 
-    private void adminConsoleOn() {
-        UIServer uiServer = UIServer.getInstance();
-        StatsStorage statsStorage = new InMemoryStatsStorage(); // или FileStatsStorage для сохранения на диск
-        uiServer.attach(statsStorage);
-        String address = uiServer.getAddress();
-        int port = uiServer.getPort();
-        System.out.printf("Address: %s, port is: %s%n", address, port);
-        model.setListeners(new StatsListener(statsStorage));
-    }
-
     // Метод для сохранения модели в файл
     private void saveModel(MultiLayerNetwork model) {
         try {
@@ -288,7 +272,7 @@ public class AiService {
         return minMaxPoints;
     }
 
-    @NotNull
+    @NonNull
     private List<EducateModel> getEducatadedData(BarSeries series,
                                                  Set<Double> buyPricesClear,
                                                  Set<Double> sellPricesClear,
@@ -319,7 +303,7 @@ public class AiService {
         return data;
     }
 
-    @NotNull
+    @NonNull
     private BarSeries getBarSeriesFromBroker() {
         BarSeries series;
         series = new BaseBarSeries();
@@ -358,7 +342,7 @@ public class AiService {
         return series;
     }
 
-    @NotNull
+    @NonNull
     private MultiLayerNetwork getModelConfig2() {
         return new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
                 .seed(123)
@@ -386,7 +370,7 @@ public class AiService {
                 .build());
     }
 
-    @NotNull
+    @NonNull
     private MultiLayerNetwork getMultiLayerNetworkMultiClass() {
         return new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
                 .seed(123)
@@ -397,6 +381,11 @@ public class AiService {
                 .list()
                 .layer(new DenseLayer.Builder()
                         .nIn(8)
+                        .nOut(128)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(new DenseLayer.Builder()
+                        .nIn(128)
                         .nOut(64)
                         .activation(Activation.RELU)
                         .build())
@@ -414,7 +403,7 @@ public class AiService {
                 .build());
     }
 
-    @NotNull
+    @NonNull
     private MultiLayerNetwork getMultiLayerNetworkBinary() {
         return new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)

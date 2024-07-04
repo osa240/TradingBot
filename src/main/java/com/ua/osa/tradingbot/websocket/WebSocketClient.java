@@ -127,7 +127,7 @@ public class WebSocketClient {
                     sendMessage(new MessageRequest(3, webSocketMethodEnum, List.of(tradePair, 100, "0.1", true)));
                 }
             }
-        }, 15000, TimeUnit.MILLISECONDS);
+        }, 5000, TimeUnit.MILLISECONDS);
         log.info("WebSocketConnection established");
         return Mono.zip(send, receive).then();
     }
@@ -222,5 +222,11 @@ public class WebSocketClient {
 
         // Create ReactorNettyWebSocketClient with HttpClient
         return new ReactorNettyWebSocketClient(httpClient);
+    }
+
+    public void closeConnection() {
+        if (sessionRef.get() != null && sessionRef.get().isOpen()) {
+            this.sessionRef.get().close();
+        }
     }
 }

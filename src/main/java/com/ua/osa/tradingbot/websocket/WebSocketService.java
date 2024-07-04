@@ -18,4 +18,8 @@ public class WebSocketService {
     public void sendMessage(MessageRequest message) {
         webSocketClient.sendMessage(message);
     }
+
+    public void closeConnection() {
+        webSocketClient.closeConnection();
+    }
 }

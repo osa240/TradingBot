@@ -14,7 +14,8 @@ import org.ta4j.core.BarSeries;
 @Slf4j
 @RequiredArgsConstructor
 public class DecisionServiceImpl implements DecisionService {
-    private final AtomicBoolean buyNow = new AtomicBoolean(false);
+    public static final AtomicBoolean buyNow = new AtomicBoolean(false);
+
     private final StrategyService strategyService;
     private final OperationService operationService;
 
@@ -38,12 +39,12 @@ public class DecisionServiceImpl implements DecisionService {
 
     private void makeDecision(OperationEnum operation, BarSeries series) {
         if (!buyNow.get() && operation == OperationEnum.BUY) {
-            this.buyNow.set(operationService.buy(
+            DecisionServiceImpl.buyNow.set(operationService.buy(
                     BigDecimal.valueOf(series.getLastBar().getClosePrice().doubleValue()),
                     null
             ));
         } else if (buyNow.get() && operation == OperationEnum.SELL) {
-            this.buyNow.set(operationService.sell(
+            DecisionServiceImpl.buyNow.set(operationService.sell(
                     BigDecimal.valueOf(series.getLastBar().getClosePrice().doubleValue()),
                     null
             ));

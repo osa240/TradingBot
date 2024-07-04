@@ -4,6 +4,7 @@ import com.ua.osa.tradingbot.models.dto.TradingRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -54,8 +55,8 @@ public class ReportServiceImpl implements ReportService {
                     for (TradingRecord tradingRecord : tradingRecords) {
                         Row row = sheet.createRow(rowIdx++);
                         row.createCell(0).setCellValue(tradingRecord.getIndicator().name());
-                        row.createCell(1).setCellValue(tradingRecord.getTimestampOpen());
-                        row.createCell(2).setCellValue(tradingRecord.getTimestampClose());
+                        row.createCell(1).setCellValue(DateFormatUtils.format(tradingRecord.getTimestampOpen(),"HH:mm:ss dd:MM:YYYY"));
+                        row.createCell(2).setCellValue(DateFormatUtils.format(tradingRecord.getTimestampClose(),"HH:mm:ss dd:MM:YYYY"));
                         row.createCell(3).setCellValue(tradingRecord.getPriceOpen().doubleValue());
                         row.createCell(4).setCellValue(tradingRecord.getPriceClose().doubleValue());
                         row.createCell(5).setCellValue(tradingRecord.getDif().doubleValue());
@@ -69,9 +70,9 @@ public class ReportServiceImpl implements ReportService {
                 workbook.write(fileOut);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
 
-        telegramBotService.sendMessageToUser("Статистика згенерирована");
+        telegramBotService.sendFileToUser(new File(reportPath), "Статистика згенерирована");
     }
 }

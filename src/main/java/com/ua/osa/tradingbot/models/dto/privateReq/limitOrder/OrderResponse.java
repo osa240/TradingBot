@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LimitOrderResponse {
+public class OrderResponse {
     private Long orderId;
     private String clientOrderId;
     private TradePair market;

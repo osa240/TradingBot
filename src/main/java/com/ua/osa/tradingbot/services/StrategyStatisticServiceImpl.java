@@ -1,7 +1,10 @@
 package com.ua.osa.tradingbot.services;
 
 import com.ua.osa.tradingbot.models.dto.TradingRecord;
+import com.ua.osa.tradingbot.models.dto.TradingRecordOrderBook;
+import com.ua.osa.tradingbot.models.entity.OrderBookStatistic;
 import com.ua.osa.tradingbot.models.entity.StrategyStatistic;
+import com.ua.osa.tradingbot.repository.OrderBookStatisticRepository;
 import com.ua.osa.tradingbot.repository.StrategyStatisticRepository;
 import com.ua.osa.tradingbot.services.indicators.IndicatorEnum;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,7 @@ import java.util.Map;
 public class StrategyStatisticServiceImpl implements StrategyStatisticService {
 
     private final StrategyStatisticRepository repository;
+    private final OrderBookStatisticRepository orderBookRepository;
     private final ReportService reportService;
     private final Map<Integer, List<TradingRecord>> statisticMap = new HashMap<>();
 
@@ -56,6 +60,42 @@ public class StrategyStatisticServiceImpl implements StrategyStatisticService {
 
         reportService.generateReportStrategyStatistic(statisticMap);
         statisticMap.clear();
+    }
+
+    @Override
+    public void generateOrderBookStatistic() {
+        List<OrderBookStatistic> all = orderBookRepository.findAll();
+        int size = all.size();
+        if (!all.getLast().getIsOpen()) {
+            size--;
+        }
+
+        List<TradingRecordOrderBook> result = new LinkedList<>();
+        for (int i = 0; i < size; i++) {
+            OrderBookStatistic orderBookStatistic = all.get(i);
+            if (!orderBookStatistic.getIsOpen()) {
+                result.add(new TradingRecordOrderBook(
+                        orderBookStatistic.getTimestamp(),
+                        orderBookStatistic.getClosePrice(),
+                        orderBookStatistic.getBidsTotalAmount(),
+                        orderBookStatistic.getAsksTotalAmount(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null));
+            } else if (!result.isEmpty()) {
+                TradingRecordOrderBook last = result.getLast();
+
+                last.setTimestampClose(orderBookStatistic.getTimestamp());
+                last.setPriceClose(orderBookStatistic.getClosePrice());
+                last.setAsksAmountClose(orderBookStatistic.getAsksTotalAmount());
+                last.setBidsAmountClose(orderBookStatistic.getBidsTotalAmount());
+
+                last.setDif(last.getPriceClose().subtract(last.getPriceOpen()));
+            }
+        }
+        reportService.generateReportStrategyStatistic(result);
     }
 
     private void checkResult(StrategyStatistic statistic, int result, int index) {

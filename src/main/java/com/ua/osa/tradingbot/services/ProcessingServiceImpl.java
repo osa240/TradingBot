@@ -1,11 +1,13 @@
 package com.ua.osa.tradingbot.services;
 
+import com.ua.osa.tradingbot.AppProperties;
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
@@ -18,16 +20,9 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final DecisionService decisionService;
 
     @Override
-    public void processingLastPrice(BigDecimal price) {
-//        this.prices.add(price);
-//
-//        if (this.prices.size() > 20) {
-//            decisionService.makeDecisionByPriceHistory(this.prices, pair);
-//            this.prices.remove(0);
-//        } else {
-//            log.warn("Not enough data. Size of prices list is: {}, but not 20", prices.size());
-//        }
-        this.price.set(price);
+    public void processingLastPrice(List<BigDecimal> price) {
+        this.price.set(price.getLast());
+        decisionService.makeDecisionByPriceHistory(price, AppProperties.TRADE_PAIR.get());
     }
 
     @Override

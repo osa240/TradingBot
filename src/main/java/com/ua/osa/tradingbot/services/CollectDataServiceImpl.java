@@ -17,6 +17,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.ua.osa.tradingbot.AppProperties;
+import com.ua.osa.tradingbot.models.dto.OrderBook;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
@@ -97,7 +98,7 @@ public class CollectDataServiceImpl implements CollectDataService {
                 lastPriceData.put(tradePair, lastPriceList);
             }
             lastPriceList.add(lastPrice);
-            processingService.processingLastPrice(lastPrice);
+            processingService.processingLastPrice(lastPriceList);
         }
     }
 
@@ -108,7 +109,7 @@ public class CollectDataServiceImpl implements CollectDataService {
     private void collectCandles(String message) {
         BarSeries barSeries = series.get();
         if (series.get().isEmpty()) {
-            KlineResponse response = whiteBitClient.getKlains(AppProperties.TRADE_PAIR.get().name(), "5m", "1440");
+            KlineResponse response = whiteBitClient.getKlains(AppProperties.TRADE_PAIR.get().name(), "1m", "1440");
             for (List<Object> kline : response.getResult()) {
                 long timestamp = ((Number) kline.get(0)).longValue();
                 ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());

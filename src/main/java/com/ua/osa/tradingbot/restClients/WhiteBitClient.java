@@ -2,7 +2,8 @@ package com.ua.osa.tradingbot.restClients;
 
 import java.util.Map;
 import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
-import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderResponse;
+import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.OrderResponse;
+import com.ua.osa.tradingbot.models.dto.privateReq.marketOrder.MarketOrderRequest;
 import com.ua.osa.tradingbot.models.dto.publicReq.all.AllPairsResponse;
 import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceRequest;
 import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceResponse;
@@ -36,5 +37,8 @@ public interface WhiteBitClient {
     BalanceResponse getBalance(BalanceRequest request);
 
     @RequestLine("POST /api/v4/order/new")
-    LimitOrderResponse newLimitOrder(LimitOrderRequest request);
+    OrderResponse newLimitOrder(LimitOrderRequest request);
+
+    @RequestLine("POST /api/v4/order/new")
+    OrderResponse newMarketOrder(MarketOrderRequest request);
 }

@@ -11,8 +11,8 @@ import feign.RequestInterceptor;
 import feign.RequestTemplate;
 
 public class AuthInterceptor implements RequestInterceptor {
-    private static final String API_KEY = "0027baf96b5b50a9ed888c2b33b5e8b2";
-    private static final String API_SECRET = "f19d67c2a4c157613bc067897a02e983";
+    private static final String API_KEY = "******";
+    private static final String API_SECRET = "******";
 
     @Override
     public void apply(RequestTemplate requestTemplate) {

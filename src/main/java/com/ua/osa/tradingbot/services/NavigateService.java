@@ -15,6 +15,7 @@ import java.util.concurrent.ScheduledFuture;
 public class NavigateService {
     public static final Subject<Boolean> runTradingBotSubject = PublishSubject.create();
     public static final Subject<Boolean> reportSubject = PublishSubject.create();
+    public static final Subject<Boolean> reportOrderBookSubject = PublishSubject.create();
 
     @Autowired
     private StrategyStatisticService strategyStatisticService;
@@ -44,6 +45,10 @@ public class NavigateService {
 
         NavigateService.reportSubject.subscribe(next -> {
             strategyStatisticService.generateStatistic();
+        });
+
+        NavigateService.reportOrderBookSubject.subscribe(next -> {
+            strategyStatisticService.generateOrderBookStatistic();
         });
     }
 

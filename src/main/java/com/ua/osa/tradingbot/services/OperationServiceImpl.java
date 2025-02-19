@@ -4,12 +4,16 @@ import com.ua.osa.tradingbot.AppProperties;
 import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import com.ua.osa.tradingbot.models.dto.enums.SideEnum;
 import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
+import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.OrderResponse;
+import com.ua.osa.tradingbot.models.dto.privateReq.marketOrder.MarketOrderRequest;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
 import com.ua.osa.tradingbot.scheduler.TaskManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
@@ -50,8 +54,8 @@ public class OperationServiceImpl implements OperationService {
                 try {
                     telegramBotService.sendMessageToUser(String.format("""
                                     \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2
-                                    ПОКУПКА*
-                                    *просьба проконтролировать
+                                    КІПІВЛЯ*
+                                    *прохання перевірити
                                     -------------------------
                                     Цена: %s
                                     Объем: %s
@@ -73,7 +77,7 @@ public class OperationServiceImpl implements OperationService {
                             ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
                                                 
                             ------------------------
-                            РУЧНАЯ ПОКУПКА ! ! !
+                            Купляємо вручну ! ! !
                             ------------------------
                             %s
                             ------------------------
@@ -124,8 +128,8 @@ public class OperationServiceImpl implements OperationService {
                     BigDecimal sellSum = lastPrice.multiply(buingAmount);
                     telegramBotService.sendMessageToUser(String.format("""
                                     \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34
-                                    П Р О Д А Ж А*
-                                    *просьба проконтролировать
+                                    П Р О Д А Ж*
+                                    *прохання перевірити
                                     --------------------------
                                     Цена: %s
                                     Объем: %s
@@ -146,17 +150,142 @@ public class OperationServiceImpl implements OperationService {
             taskManager.execute(() -> {
                 try {
                     telegramBotService.sendMessageToUser(String.format("""
-                        ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
-                        ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
-                                            
-                        ------------------------
-                        РУЧНАЯ ПОКУПКА ! ! !
-                        ------------------------
-                        %s
-                        ------------------------
-                        ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
-                        ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
-                        """, e.getMessage()));
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                                                
+                            ------------------------
+                            Купляємо вручну ! ! !
+                            ------------------------
+                            %s
+                            ------------------------
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            """, e.getMessage()));
+                } catch (Exception e1) {
+                    log.error(e1.getMessage(), e1);
+                }
+            });
+        }
+        return false;
+    }
+
+    @Override
+    public boolean buyMarket(BigDecimal amount) {
+        if (amount == null) {
+            amount = buyAmount.get();
+        }
+
+        MarketOrderRequest request = new MarketOrderRequest();
+
+        request.setRequest(MethodEnum.NEW_MARKET_ORDER.getMethod());
+        request.setSide(SideEnum.buy);
+        request.setMarket(AppProperties.TRADE_PAIR.get());
+        request.setAmount(new BigDecimal("10"));
+
+        try {
+            OrderResponse orderResponse = whiteBitClient.newMarketOrder(request);
+            if (Objects.nonNull(orderResponse)) {
+                BigDecimal amountForSell = orderResponse.getAmount();
+                closeAmountToBuy.set(amountForSell);
+            }
+            log.info("Strong buy signal generated.");
+
+            taskManager.execute(() -> {
+                try {
+                    telegramBotService.sendMessageToUser(String.format("""
+                                    \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2
+                                    Купівля
+                                    -------------------------
+                                    Объем: %s
+                                    Sum: 10
+                                    \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2""",
+                            closeAmountToBuy.get()));
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            });
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            taskManager.execute(() -> {
+                try {
+                    telegramBotService.sendMessageToUser(String.format("""
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                                                
+                            ------------------------
+                            Купляємо вручну ! ! !
+                            ------------------------
+                            %s
+                            ------------------------
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            """, e.getMessage()));
+                } catch (Exception e1) {
+                    log.error(e1.getMessage(), e1);
+                }
+            });
+        }
+        return false;
+    }
+
+    @Override
+    public boolean sellMarket(BigDecimal amount) {
+        if (amount == null) {
+            amount = closeAmountToBuy.get();
+        }
+
+        MarketOrderRequest request = new MarketOrderRequest();
+
+        request.setRequest(MethodEnum.NEW_MARKET_ORDER.getMethod());
+        request.setSide(SideEnum.sell);
+        request.setMarket(AppProperties.TRADE_PAIR.get());
+        request.setAmount(amount);
+
+        try {
+            OrderResponse orderResponse = whiteBitClient.newMarketOrder(request);
+            if (Objects.nonNull(orderResponse)) {
+                final BigDecimal amountForSell = orderResponse.getAmount();
+                closeAmountToBuy.set(amountForSell);
+
+                log.info("Strong buy signal generated.");
+
+                taskManager.execute(() -> {
+                    try {
+                        telegramBotService.sendMessageToUser(String.format("""
+                                    \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34
+                                    Продаємо
+                                    --------------------------
+                                    Объем: %s
+                                    Сумма: %s
+                                    ::::::::::::::::::::::::::
+                                    Результат: %s
+                                    ::::::::::::::::::::::::::
+                                    \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34""",
+                                closeAmountToBuy.get(), amountForSell, amountForSell.subtract(new BigDecimal("10"))));
+                    } catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                    }
+                });
+            }
+
+            return true;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            taskManager.execute(() -> {
+                try {
+                    telegramBotService.sendMessageToUser(String.format("""
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                                                
+                            ------------------------
+                            Купляємо вручну ! ! !
+                            ------------------------
+                            %s
+                            ------------------------
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            ⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️⛔️
+                            """, e.getMessage()));
                 } catch (Exception e1) {
                     log.error(e1.getMessage(), e1);
                 }

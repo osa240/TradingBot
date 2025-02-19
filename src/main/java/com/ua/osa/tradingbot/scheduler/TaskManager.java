@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class TaskManager {
     private final ThreadPoolTaskScheduler taskScheduler;
 
-    // Запуск задачи немедленно
+    // Запуск таска одразу
     public ScheduledFuture<?> execute(Runnable task) {
         return taskScheduler.schedule(task, triggerContext -> {
             task.run();
@@ -23,27 +23,27 @@ public class TaskManager {
         });
     }
 
-    // Запуск задачи с задержкой
+    // Запуск таски с затримкою
     public ScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
         return taskScheduler.schedule(task, new Date(System.currentTimeMillis() + unit.toMillis(delay)));
     }
 
-    // Повторяющаяся задача с фиксированной задержкой
+    // Повторювана таска с фіксованой затримкою
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         return taskScheduler.scheduleAtFixedRate(task, new Date(System.currentTimeMillis() + unit.toMillis(initialDelay)), unit.toMillis(period));
     }
 
-    // Повторяющаяся задача с фиксированным интервалом
+    // Повторювана таска с фіксованим інтервалом
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         return taskScheduler.scheduleWithFixedDelay(task, new Date(System.currentTimeMillis() + unit.toMillis(initialDelay)), unit.toMillis(delay));
     }
 
-    // Отмена задачи
+    // Зуминка таски
     public void cancel(ScheduledFuture<?> futureTask) {
         futureTask.cancel(true);
     }
 
-    // Остановка всех задач и завершение планировщика
+    // Зупинка всіх тасків
     public void shutdown() {
         taskScheduler.shutdown();
     }

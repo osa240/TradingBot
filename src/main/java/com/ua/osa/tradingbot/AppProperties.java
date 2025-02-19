@@ -1,7 +1,6 @@
 package com.ua.osa.tradingbot;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashSet;
@@ -25,8 +24,8 @@ public class AppProperties {
             URL url = new URL(TEST_URL);
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("HEAD");
-            urlConnection.setConnectTimeout(5000); // 5 секунд таймаут на подключение
-            urlConnection.setReadTimeout(5000); // 5 секунд таймаут на чтение
+            urlConnection.setConnectTimeout(5000);
+            urlConnection.setReadTimeout(5000);
             int responseCode = urlConnection.getResponseCode();
             return (200 <= responseCode && responseCode <= 399);
         } catch (IOException e) {

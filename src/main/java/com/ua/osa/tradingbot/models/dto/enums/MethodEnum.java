@@ -9,7 +9,8 @@ import lombok.Getter;
 @Getter
 public enum MethodEnum {
     BALANCE("/api/v4/trade-account/balance"),
-    NEW_LIMIT_ORDER("/api/v4/order/new");
+    NEW_LIMIT_ORDER("/api/v4/order/new"),
+    NEW_MARKET_ORDER("/api/v4/order/market");
 
     String method;
 
@@ -28,6 +29,7 @@ public enum MethodEnum {
         return switch (getEnumValueByPath(path)) {
             case BALANCE -> BalanceRequest.class;
             case NEW_LIMIT_ORDER -> LimitOrderRequest.class;
+            case NEW_MARKET_ORDER -> LimitOrderRequest.class;
         };
     }
 

@@ -30,6 +30,7 @@ public class TelegramBotService extends TelegramLongPollingBot {
         listOfCommands.add(new BotCommand("/buy_flag", "change status to buy (manual)"));
         listOfCommands.add(new BotCommand("/sell_flag", "change status to sell (manual)"));
         listOfCommands.add(new BotCommand("/report", "download a report"));
+        listOfCommands.add(new BotCommand("/report_orderbook", "download a report of order book"));
         try {
             execute(new SetMyCommands(listOfCommands));
         } catch (Exception e) {
@@ -70,6 +71,8 @@ public class TelegramBotService extends TelegramLongPollingBot {
                 NavigateService.runTradingBotSubject.onNext(false);
             } else if ("/report".equals(message)) {
                 NavigateService.reportSubject.onNext(true);
+            } else if ("/report_orderbook".equals(message)) {
+                NavigateService.reportOrderBookSubject.onNext(true);
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);

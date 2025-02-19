@@ -122,9 +122,9 @@ public class WebSocketClient {
                 if (webSocketMethodEnum.equals(WebSocketMethodEnum.lastprice_subscribe)) {
                     sendMessage(new MessageRequest(1, webSocketMethodEnum, List.of(tradePair)));
                 } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.candles_subscribe)) {
-                    sendMessage(new MessageRequest(2, webSocketMethodEnum, List.of(tradePair, 300)));
+                    sendMessage(new MessageRequest(2, webSocketMethodEnum, List.of(tradePair, 60)));
                 } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.depth_subscribe)) {
-                    sendMessage(new MessageRequest(3, webSocketMethodEnum, List.of(tradePair, 100, "0.1", true)));
+                    sendMessage(new MessageRequest(3, webSocketMethodEnum, List.of(tradePair, 100, "100", true)));
                 }
             }
         }, 5000, TimeUnit.MILLISECONDS);

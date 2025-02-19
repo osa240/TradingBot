@@ -89,7 +89,6 @@ public class AiService {
     }
 
     private INDArray getPrediction(BarSeries series) {
-        // Рассчет индикаторов
         Indicator<Num> closePrice = new ClosePriceIndicator(series);
         RSIIndicator rsi = new RSIIndicator(closePrice, 14);
         MACDIndicator macd = new MACDIndicator(closePrice, 12, 26);
@@ -148,7 +147,7 @@ public class AiService {
     }
 
     private void prepareDataAndEducate(BarSeries series, Set<Double> buyPricesClear, Set<Double> sellPricesClear) {
-        // Рассчет индикаторов
+        // Розрахунок індикаторів
         Indicator<Num> closePrice = new ClosePriceIndicator(series);
         RSIIndicator rsi = new RSIIndicator(closePrice, 14);
         MACDIndicator macd = new MACDIndicator(closePrice, 12, 26);
@@ -158,21 +157,20 @@ public class AiService {
         BollingerBandsLowerIndicator bbLower = new BollingerBandsLowerIndicator(bbMiddle, closePrice, factor);
         StochasticOscillatorKIndicator stochasticK = new StochasticOscillatorKIndicator(series, 14);
 
-        // Разделение данных на тренировочные и тестовые наборы
+        // Розбивка на тренувальні та тестові данні
         int numSamples = series.getBarCount();
         int trainSize = (int) (numSamples * 0.8);
         int testSize = numSamples - trainSize;
 
-        // Подготовка данных для модели
-        double[][] featuresTrain = new double[trainSize][8]; // Учитываем 8 индикаторов
+        // Підготовка данних для моделі
+        double[][] featuresTrain = new double[trainSize][8];
         int[][] labelsTrain = new int[trainSize][3];
-        double[][] featuresTest = new double[testSize][8]; // Учитываем 8 индикаторов
+        double[][] featuresTest = new double[testSize][8];
         int[][] labelsTest = new int[testSize][3];
 
         List<EducateModel> data = getEducatadedData(series, buyPricesClear, sellPricesClear, closePrice, rsi, macd,
                 bbMiddle, bbUpper, bbLower, stochasticK);
 
-        // Заполняем массивы
         int j = 0;
         for (int i = 0; i < data.size(); i++) {
             if (i < trainSize) {
@@ -185,7 +183,6 @@ public class AiService {
             }
         }
 
-        // Преобразование массивов в INDArrays
         INDArray featuresINDArrayTrain = Nd4j.create(featuresTrain);
         INDArray labelsINDArrayTrain = Nd4j.create(labelsTrain);
         INDArray featuresINDArrayTest = Nd4j.create(featuresTest);
@@ -194,7 +191,7 @@ public class AiService {
         DataSet trainData = new DataSet(featuresINDArrayTrain, labelsINDArrayTrain);
         DataSet testData = new DataSet(featuresINDArrayTest, labelsINDArrayTest);
 
-        // Нормализация данных
+        // Нормалізація данних
         DataNormalization normalizer = new NormalizerMinMaxScaler();
         normalizer.fit(trainData);
         normalizer.transform(trainData);
@@ -206,10 +203,10 @@ public class AiService {
         taskManager.execute(() -> {
             log.warn("AI model start education... Time: " + LocalDateTime.now().toString());
 
-            // Обучение модели
+            // Навчання моделі
             model.fit(trainIterator, 100);
 
-            // Оценка модели
+            // Оцінка моделі
             Evaluation eval = new Evaluation();
             try {
                 while (testIterator.hasNext()) {
@@ -222,7 +219,7 @@ public class AiService {
                 log.error(e.getMessage(), e);
             }
 
-            // Сохранение модели после обучения
+            // Збереження моделі після навчання
             saveModel(model);
             System.out.println("Model saved to file.");
 
@@ -231,18 +228,16 @@ public class AiService {
         log.warn("AI model has been created... Time: " + LocalDateTime.now().toString());
     }
 
-    // Метод для сохранения модели в файл
     private void saveModel(MultiLayerNetwork model) {
         try {
             File locationToSave = new File(modelPath);
-            boolean saveUpdater = true; // Сохранить параметры оптимизатора
+            boolean saveUpdater = true;
             ModelSerializer.writeModel(model, locationToSave, saveUpdater);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    // Метод для загрузки модели из файла
     private MultiLayerNetwork loadModel() {
         try {
             File locationToSave = new File(modelPath);
@@ -308,12 +303,12 @@ public class AiService {
         BarSeries series;
         series = new BaseBarSeries();
         try {
-            long week = 604_799;
-            long start = 1713202200;
+            long week = 604_800;
+            long start = 1_710_783_000;
             long end = start + week;
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 30; i++) {
                 KlineResponse response = whiteBitClient.getKlains(AppProperties.TRADE_PAIR.get().name(),
-                        "5m", "1440", start, end);
+                        "1m", "1440", start, end);
                 for (List<Object> kline : response.getResult()) {
                     long timestamp = ((Number) kline.get(0)).longValue();
                     ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());

@@ -40,13 +40,13 @@ public class OrderBookCollectTask implements Runnable {
 
         if (volumeDifference.compareTo(THRESHOLD) > 0) {
             AppProperties.ORDERBOOK_SIGNAL.set(OrderBookStatusEnum.buy);
-            log.info("Buy: ORDERBOOK"); // Покупка, если объем заявок на покупку значительно превышает объем заявок на продажу
+            log.info("Buy: ORDERBOOK");
         } else if (volumeDifference.compareTo(THRESHOLD.negate()) < 0) {
             AppProperties.ORDERBOOK_SIGNAL.set(OrderBookStatusEnum.sell);
-            log.info("Sell: ORDERBOOK"); // Продажа, если объем заявок на продажу значительно превышает объем заявок на покупку
+            log.info("Sell: ORDERBOOK");
         } else {
             AppProperties.ORDERBOOK_SIGNAL.set(OrderBookStatusEnum.hold);
-            log.info("Hold: ORDERBOOK"); // Удержание, если нет значительного дисбаланса объема
+            log.info("Hold: ORDERBOOK");
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.ua.osa.tradingbot.services.ai;
 
-import com.ua.osa.tradingbot.AppProperties;
+import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.MinMaxPoint;
 import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
@@ -307,7 +307,7 @@ public class AiService {
             long start = 1_710_783_000;
             long end = start + week;
             for (int i = 0; i < 30; i++) {
-                KlineResponse response = whiteBitClient.getKlains(AppProperties.TRADE_PAIR.get().name(),
+                KlineResponse response = whiteBitClient.getKlains(BotSettings.TRADE_PAIR.get().name(),
                         "1m", "1440", start, end);
                 for (List<Object> kline : response.getResult()) {
                     long timestamp = ((Number) kline.get(0)).longValue();

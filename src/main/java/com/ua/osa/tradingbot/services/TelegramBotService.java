@@ -1,8 +1,11 @@
 package com.ua.osa.tradingbot.services;
 
+import static com.ua.osa.tradingbot.AppProperties.IS_BUY_ALREADY;
+
 import com.ua.osa.tradingbot.config.TelegramConfig;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -34,14 +37,20 @@ public class TelegramBotService extends TelegramLongPollingBot {
         try {
             execute(new SetMyCommands(listOfCommands));
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            log.error(e.getMessage());
         }
     }
 
     @PostConstruct
     public void start() {
-        NavigateService.runTradingBotSubject.onNext(true);
-        sendMessageToUser("Trading bot is in ACTIVE state");
+        new Thread(() -> {
+            try {
+                Thread.sleep(15000);
+                sendMessageToUser("Trading bot is in ACTIVE state");
+            } catch (InterruptedException e) {
+                log.error(e.getMessage());
+            }
+        }).start();
     }
 
     @Override
@@ -60,11 +69,11 @@ public class TelegramBotService extends TelegramLongPollingBot {
             log.info(update.toString());
             String message = update.getMessage().getText();
             if ("/buy_flag".equals(message)) {
-                DecisionServiceImpl.buyNow.set(true);
-                log.info("Current BUY status: {}", DecisionServiceImpl.buyNow.get());
+                IS_BUY_ALREADY.set(true);
+                log.info("Current BUY status: {}", IS_BUY_ALREADY.get());
             } else if ("/sell_flag".equals(message)) {
-                DecisionServiceImpl.buyNow.set(false);
-                log.info("Current BUY status: {}", DecisionServiceImpl.buyNow.get());
+                IS_BUY_ALREADY.set(false);
+                log.info("Current BUY status: {}", IS_BUY_ALREADY.get());
             } else if ("/start_bot".equals(message)) {
                 NavigateService.runTradingBotSubject.onNext(true);
             } else if ("/stop_bot".equals(message)) {

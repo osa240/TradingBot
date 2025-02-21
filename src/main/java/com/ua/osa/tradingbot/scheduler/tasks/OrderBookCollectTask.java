@@ -3,6 +3,7 @@ package com.ua.osa.tradingbot.scheduler.tasks;
 import java.math.BigDecimal;
 import java.util.List;
 import com.ua.osa.tradingbot.AppProperties;
+import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.enums.OrderBookStatusEnum;
 import com.ua.osa.tradingbot.models.dto.publicReq.orderbook.Order;
 import com.ua.osa.tradingbot.models.dto.publicReq.orderbook.OrderBookDto;
@@ -22,7 +23,7 @@ public class OrderBookCollectTask implements Runnable {
     @Override
     public void run() {
         try {
-            decideTrade(whiteBitClient.getOrderBook(AppProperties.TRADE_PAIR.get().name()));
+            decideTrade(whiteBitClient.getOrderBook(BotSettings.TRADE_PAIR.get().name()));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

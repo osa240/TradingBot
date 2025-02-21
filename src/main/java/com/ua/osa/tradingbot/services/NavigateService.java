@@ -1,6 +1,7 @@
 package com.ua.osa.tradingbot.services;
 
 import com.ua.osa.tradingbot.scheduler.TaskManager;
+import com.ua.osa.tradingbot.websocket.WebSocketClient;
 import com.ua.osa.tradingbot.websocket.WebSocketService;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -8,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.concurrent.ScheduledFuture;
 
 @Service
@@ -23,8 +25,10 @@ public class NavigateService {
     private TaskManager taskManager;
     @Autowired
     private WebSocketService webSocketService;
+    @Autowired
+    private WebSocketClient webSocketClient;
 
-    private ScheduledFuture<?> currentSubscribe;
+//    private ScheduledFuture<?> currentSubscribe;
 
     @PostConstruct
     public void subsribeModules() {
@@ -39,7 +43,8 @@ public class NavigateService {
                     }
 
                 }, // onNext
-                error -> {}, // onError
+                error -> {
+                }, // onError
                 () -> System.out.println("Выполнено!") // onComplete
         );
 
@@ -54,15 +59,12 @@ public class NavigateService {
 
 
     public void runTradingBot() {
-        this.currentSubscribe = taskManager.execute(() -> {
+        taskManager.execute(() -> {
             webSocketService.startWebSocketCommunication();
         });
     }
 
     public void stopTradingBot() {
-        if (this.currentSubscribe != null) {
-            this.webSocketService.closeConnection();
-            this.currentSubscribe.cancel(true);
-        }
+        this.webSocketService.closeConnection();
     }
 }

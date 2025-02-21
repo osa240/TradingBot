@@ -1,6 +1,10 @@
 package com.ua.osa.tradingbot.services;
 
-import com.ua.osa.tradingbot.AppProperties;
+import static com.ua.osa.tradingbot.AppProperties.CLOSE_BUY_AMOUNT;
+import static com.ua.osa.tradingbot.AppProperties.LAST_BUY_PRICE;
+import static com.ua.osa.tradingbot.BotSettings.BUY_AMOUNT;
+
+import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import com.ua.osa.tradingbot.models.dto.enums.SideEnum;
 import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
@@ -11,10 +15,8 @@ import com.ua.osa.tradingbot.scheduler.TaskManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 @Slf4j
@@ -24,24 +26,20 @@ public class OperationServiceImpl implements OperationService {
     private final TelegramBotService telegramBotService;
     private final TaskManager taskManager;
 
-    private final AtomicReference<BigDecimal> buyPrice = new AtomicReference<>(BigDecimal.ZERO);
-    private final AtomicReference<BigDecimal> buyAmount = new AtomicReference<>(BigDecimal.valueOf(0.0002));
-    private final AtomicReference<BigDecimal> closeAmountToBuy = new AtomicReference<>(BigDecimal.ZERO);
-
     @Override
     public boolean buy(BigDecimal price, BigDecimal amount) {
         if (amount == null) {
-            amount = buyAmount.get();
+            amount = BUY_AMOUNT.get();
         }
-        buyPrice.set(price);
-        buyAmount.set(amount);
+        LAST_BUY_PRICE.set(price);
+        BUY_AMOUNT.set(amount);
         BigDecimal closeAmountToBuy = price.multiply(amount);
-        this.closeAmountToBuy.set(closeAmountToBuy);
+        CLOSE_BUY_AMOUNT.set(closeAmountToBuy);
 
         LimitOrderRequest request = new LimitOrderRequest();
         request.setRequest(MethodEnum.NEW_LIMIT_ORDER.getMethod());
         request.setSide(SideEnum.buy);
-        request.setMarket(AppProperties.TRADE_PAIR.get());
+        request.setMarket(BotSettings.TRADE_PAIR.get());
 
         request.setPrice(price);
         request.setAmount(amount);
@@ -57,12 +55,12 @@ public class OperationServiceImpl implements OperationService {
                                     КІПІВЛЯ*
                                     *прохання перевірити
                                     -------------------------
-                                    Цена: %s
-                                    Объем: %s
+                                    Ціна: %s
+                                    Об'єм: %s
                                     -------------------------
-                                    Сумма: %s
+                                    Сума: %s
                                     \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2""",
-                            price, this.buyAmount.get(), closeAmountToBuy));
+                            price, BUY_AMOUNT.get(), closeAmountToBuy));
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
@@ -96,13 +94,13 @@ public class OperationServiceImpl implements OperationService {
     public boolean sell(BigDecimal price, BigDecimal amount) {
         try {
             if (amount == null) {
-                amount = buyAmount.get();
+                amount = BUY_AMOUNT.get();
             }
 
             LimitOrderRequest request = new LimitOrderRequest();
             request.setRequest(MethodEnum.NEW_LIMIT_ORDER.getMethod());
             request.setSide(SideEnum.sell);
-            request.setMarket(AppProperties.TRADE_PAIR.get());
+            request.setMarket(BotSettings.TRADE_PAIR.get());
 
             request.setAmount(amount);
             request.setPrice(price);
@@ -113,8 +111,8 @@ public class OperationServiceImpl implements OperationService {
             taskManager.execute(() -> {
                 try {
                     // statistika
-                    BigDecimal buingPrice = this.buyPrice.get();
-                    BigDecimal buingAmount = this.buyAmount.get();
+                    BigDecimal buingPrice = LAST_BUY_PRICE.get();
+                    BigDecimal buingAmount = BUY_AMOUNT.get();
                     BigDecimal lastPrice = request.getPrice();
 
                     log.info("---------------------------------------------------------------------------------------");
@@ -131,15 +129,15 @@ public class OperationServiceImpl implements OperationService {
                                     П Р О Д А Ж*
                                     *прохання перевірити
                                     --------------------------
-                                    Цена: %s
-                                    Объем: %s
+                                    Ціна: %s
+                                    Об'єм: %s
                                     --------------------------
-                                    Сумма: %s
+                                    Сума: %s
                                     ::::::::::::::::::::::::::
                                     Результат: %s
                                     ::::::::::::::::::::::::::
                                     \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34""",
-                            lastPrice, buingAmount, sellSum, sellSum.subtract(this.closeAmountToBuy.get())));
+                            lastPrice, buingAmount, sellSum, sellSum.subtract(CLOSE_BUY_AMOUNT.get())));
                 } catch (Exception e1) {
                     log.error(e1.getMessage(), e1);
                 }
@@ -172,21 +170,21 @@ public class OperationServiceImpl implements OperationService {
     @Override
     public boolean buyMarket(BigDecimal amount) {
         if (amount == null) {
-            amount = buyAmount.get();
+            amount = BUY_AMOUNT.get();
         }
 
         MarketOrderRequest request = new MarketOrderRequest();
 
         request.setRequest(MethodEnum.NEW_MARKET_ORDER.getMethod());
         request.setSide(SideEnum.buy);
-        request.setMarket(AppProperties.TRADE_PAIR.get());
+        request.setMarket(BotSettings.TRADE_PAIR.get());
         request.setAmount(new BigDecimal("10"));
 
         try {
             OrderResponse orderResponse = whiteBitClient.newMarketOrder(request);
             if (Objects.nonNull(orderResponse)) {
                 BigDecimal amountForSell = orderResponse.getAmount();
-                closeAmountToBuy.set(amountForSell);
+                CLOSE_BUY_AMOUNT.set(amountForSell);
             }
             log.info("Strong buy signal generated.");
 
@@ -196,10 +194,10 @@ public class OperationServiceImpl implements OperationService {
                                     \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2
                                     Купівля
                                     -------------------------
-                                    Объем: %s
-                                    Sum: 10
+                                    Об'єм: %s
+                                    Сума: 10
                                     \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2""",
-                            closeAmountToBuy.get()));
+                            CLOSE_BUY_AMOUNT.get()));
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
@@ -232,21 +230,21 @@ public class OperationServiceImpl implements OperationService {
     @Override
     public boolean sellMarket(BigDecimal amount) {
         if (amount == null) {
-            amount = closeAmountToBuy.get();
+            amount = CLOSE_BUY_AMOUNT.get();
         }
 
         MarketOrderRequest request = new MarketOrderRequest();
 
         request.setRequest(MethodEnum.NEW_MARKET_ORDER.getMethod());
         request.setSide(SideEnum.sell);
-        request.setMarket(AppProperties.TRADE_PAIR.get());
+        request.setMarket(BotSettings.TRADE_PAIR.get());
         request.setAmount(amount);
 
         try {
             OrderResponse orderResponse = whiteBitClient.newMarketOrder(request);
             if (Objects.nonNull(orderResponse)) {
                 final BigDecimal amountForSell = orderResponse.getAmount();
-                closeAmountToBuy.set(amountForSell);
+                CLOSE_BUY_AMOUNT.set(amountForSell);
 
                 log.info("Strong buy signal generated.");
 
@@ -256,13 +254,13 @@ public class OperationServiceImpl implements OperationService {
                                     \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34
                                     Продаємо
                                     --------------------------
-                                    Объем: %s
-                                    Сумма: %s
+                                    Об'єм: %s
+                                    Сума: %s
                                     ::::::::::::::::::::::::::
                                     Результат: %s
                                     ::::::::::::::::::::::::::
                                     \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34""",
-                                closeAmountToBuy.get(), amountForSell, amountForSell.subtract(new BigDecimal("10"))));
+                                CLOSE_BUY_AMOUNT.get(), amountForSell, amountForSell.subtract(new BigDecimal("10"))));
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }

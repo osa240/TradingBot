@@ -16,8 +16,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
-import com.ua.osa.tradingbot.AppProperties;
-import com.ua.osa.tradingbot.models.dto.OrderBook;
+import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
 import com.ua.osa.tradingbot.restClients.WhiteBitClient;
@@ -45,9 +44,13 @@ public class CollectDataServiceImpl implements CollectDataService {
     private final Map<String, List<BigDecimal>> lastPriceData = new ConcurrentHashMap<>();
     private final Map<String, List<TradeDto>> lastTradeData = new ConcurrentHashMap<>();
     private final ProcessingService processingService;
-    private final AtomicReference<BarSeries> series = new AtomicReference<>(new BaseBarSeries("symbol"));
+    private final AtomicReference<BarSeries> series = new AtomicReference<>();
     private final WhiteBitClient whiteBitClient;
     private final OrderBookService orderBookService;
+
+    {
+        series.set(new BaseBarSeries(BotSettings.TRADE_PAIR.get().name()));
+    }
 
     @Override
     public synchronized void collectDataFromWebSocket(String message) {
@@ -108,8 +111,8 @@ public class CollectDataServiceImpl implements CollectDataService {
 
     private void collectCandles(String message) {
         BarSeries barSeries = series.get();
-        if (series.get().isEmpty()) {
-            KlineResponse response = whiteBitClient.getKlains(AppProperties.TRADE_PAIR.get().name(), "1m", "1440");
+        if (barSeries.isEmpty()) {
+            KlineResponse response = whiteBitClient.getKlains(BotSettings.TRADE_PAIR.get().name(), "1m", "1440");
             for (List<Object> kline : response.getResult()) {
                 long timestamp = ((Number) kline.get(0)).longValue();
                 ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());

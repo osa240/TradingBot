@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.Gson;
 import com.ua.osa.tradingbot.AppProperties;
+import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
 import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
 import com.ua.osa.tradingbot.scheduler.TaskManager;
@@ -51,7 +52,7 @@ public class WebSocketClient {
     private final AtomicReference<WebSocketSession> sessionRef = new AtomicReference<>(null);
     private final AtomicReference<ReactorNettyWebSocketClient> client = new AtomicReference<>(null);
     private final AtomicReference<Disposable> subscribe = new AtomicReference<>(null);
-    private final MessageRequest pingRequest = new MessageRequest(0, WebSocketMethodEnum.ping, new ArrayList<>());
+    private final MessageRequest pingRequest = new MessageRequest(0, WebSocketMethodEnum.ping.name(), new ArrayList<>());
     private final CollectDataService collectDataService;
     private final TaskManager taskManager;
 
@@ -117,14 +118,14 @@ public class WebSocketClient {
         taskManager.schedule(() -> {
             log.info("Restart all subscribes");
 
-            TradePair tradePair = AppProperties.TRADE_PAIR.get();
-            for (WebSocketMethodEnum webSocketMethodEnum : AppProperties.SUBSCRIBES.get()) {
+            TradePair tradePair = BotSettings.TRADE_PAIR.get();
+            for (WebSocketMethodEnum webSocketMethodEnum : BotSettings.SUBSCRIBES.get()) {
                 if (webSocketMethodEnum.equals(WebSocketMethodEnum.lastprice_subscribe)) {
-                    sendMessage(new MessageRequest(1, webSocketMethodEnum, List.of(tradePair)));
+                    sendMessage(new MessageRequest(webSocketMethodEnum.ordinal(), webSocketMethodEnum.name(), List.of(tradePair)));
                 } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.candles_subscribe)) {
-                    sendMessage(new MessageRequest(2, webSocketMethodEnum, List.of(tradePair, 60)));
+                    sendMessage(new MessageRequest(webSocketMethodEnum.ordinal(), webSocketMethodEnum.name(), List.of(tradePair, 60)));
                 } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.depth_subscribe)) {
-                    sendMessage(new MessageRequest(3, webSocketMethodEnum, List.of(tradePair, 100, "100", true)));
+                    sendMessage(new MessageRequest(webSocketMethodEnum.ordinal(), webSocketMethodEnum.name(), List.of(tradePair, 100, "100", true)));
                 }
             }
         }, 5000, TimeUnit.MILLISECONDS);
@@ -226,6 +227,7 @@ public class WebSocketClient {
 
     public void closeConnection() {
         if (sessionRef.get() != null && sessionRef.get().isOpen()) {
+            this.subscribe.get().dispose();
             this.sessionRef.get().close();
         }
     }

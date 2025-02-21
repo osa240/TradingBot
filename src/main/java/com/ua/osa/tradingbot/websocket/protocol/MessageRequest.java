@@ -16,6 +16,6 @@ import lombok.ToString;
 @ToString
 public class MessageRequest {
     private int id;
-    private WebSocketMethodEnum method;
+    private String method;
     private List<Object> params = new ArrayList<>();
 }

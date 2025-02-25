@@ -1,4 +1,4 @@
-package com.ua.osa.tradingbot.models.dto.publicReq.orderbook;
+package com.ua.osa.tradingbot.models.dto.publicrequest.orderbook;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

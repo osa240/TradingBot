@@ -1,9 +1,9 @@
 package com.ua.osa.tradingbot.models.dto.enums;
 
-import java.util.Arrays;
 import com.ua.osa.tradingbot.models.dto.AbstractRequest;
-import com.ua.osa.tradingbot.models.dto.privateReq.balance.BalanceRequest;
-import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
+import com.ua.osa.tradingbot.models.dto.privaterequest.balance.BalanceRequest;
+import com.ua.osa.tradingbot.models.dto.privaterequest.limitorder.LimitOrderRequest;
+import java.util.Arrays;
 import lombok.Getter;
 
 @Getter
@@ -12,7 +12,7 @@ public enum MethodEnum {
     NEW_LIMIT_ORDER("/api/v4/order/new"),
     NEW_MARKET_ORDER("/api/v4/order/market");
 
-    String method;
+    private final String method;
 
     MethodEnum(String method) {
         this.method = method;

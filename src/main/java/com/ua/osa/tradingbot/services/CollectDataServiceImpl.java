@@ -1,5 +1,16 @@
 package com.ua.osa.tradingbot.services;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+import com.ua.osa.tradingbot.BotSettings;
+import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
+import com.ua.osa.tradingbot.models.dto.publicrequest.kline.KlineResponse;
+import com.ua.osa.tradingbot.restcients.WhiteBitClient;
+import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
+import com.ua.osa.tradingbot.websocket.protocol.dto.TradeDto;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -11,17 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import com.ua.osa.tradingbot.BotSettings;
-import com.ua.osa.tradingbot.models.dto.enums.WebSocketMethodEnum;
-import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
-import com.ua.osa.tradingbot.restClients.WhiteBitClient;
-import com.ua.osa.tradingbot.websocket.protocol.MessageRequest;
-import com.ua.osa.tradingbot.websocket.protocol.dto.TradeDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,6 +37,9 @@ import org.ta4j.core.num.Num;
 @Slf4j
 @RequiredArgsConstructor
 public class CollectDataServiceImpl implements CollectDataService {
+
+    public static final String INTERVAL = "1m";
+    public static final String LIMIT = "1440";
 
     private static final int TRADE_PAIR_POSITION = 0;
     private static final int LAST_PRICE_POSITION = 1;
@@ -112,10 +115,13 @@ public class CollectDataServiceImpl implements CollectDataService {
     private void collectCandles(String message) {
         BarSeries barSeries = series.get();
         if (barSeries.isEmpty()) {
-            KlineResponse response = whiteBitClient.getKlains(BotSettings.TRADE_PAIR.get().name(), "1m", "1440");
+            KlineResponse response = whiteBitClient.getKlains(BotSettings.TRADE_PAIR.get().name(),
+                    INTERVAL, LIMIT);
             for (List<Object> kline : response.getResult()) {
                 long timestamp = ((Number) kline.get(0)).longValue();
-                ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());
+                ZonedDateTime endTime = ZonedDateTime.ofInstant(
+                        Instant.ofEpochSecond(timestamp), ZoneId.systemDefault()
+                );
                 Num open = DecimalNum.valueOf((String) kline.get(1));
                 Num high = DecimalNum.valueOf((String) kline.get(3));
                 Num low = DecimalNum.valueOf((String) kline.get(4));
@@ -129,13 +135,16 @@ public class CollectDataServiceImpl implements CollectDataService {
                 addNewBar(barSeries, bar);
             }
         }
-        JsonElement paramsElement = JsonParser.parseString(message).getAsJsonObject().get("params");
+        JsonElement paramsElement = JsonParser.parseString(message)
+                .getAsJsonObject()
+                .get("params");
         JsonArray paramsArray = paramsElement.getAsJsonArray();
         for (JsonElement jsonElement : paramsArray.asList()) {
             JsonArray asJsonArray = jsonElement.getAsJsonArray();
 
             long timestamp = asJsonArray.get(0).getAsLong();
-            ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());
+            ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp),
+                    ZoneId.systemDefault());
             Num open = DecimalNum.valueOf(asJsonArray.get(1).getAsDouble());
             Num high = DecimalNum.valueOf(asJsonArray.get(3).getAsDouble());
             Num low = DecimalNum.valueOf(asJsonArray.get(4).getAsDouble());
@@ -143,7 +152,8 @@ public class CollectDataServiceImpl implements CollectDataService {
             Num volumeInStock = DecimalNum.valueOf(asJsonArray.get(5).getAsDouble());
             Num volumeInMoney = DecimalNum.valueOf(asJsonArray.get(6).getAsDouble());
 
-            BaseBar bar = new BaseBar(Duration.ofMinutes(1), endTime, open, high, low, close, volumeInStock, volumeInMoney);
+            BaseBar bar = new BaseBar(Duration.ofMinutes(1), endTime, open, high,
+                    low, close, volumeInStock, volumeInMoney);
             addNewBar(barSeries, bar);
         }
         processingService.processingKlains(barSeries);
@@ -167,6 +177,7 @@ public class CollectDataServiceImpl implements CollectDataService {
     }
 
     private BigDecimal getBigDecimalFromParams(List<Object> params) {
-        return BigDecimal.valueOf(Double.parseDouble(getStringFromParams(params, CollectDataServiceImpl.LAST_PRICE_POSITION)));
+        return BigDecimal.valueOf(Double.parseDouble(getStringFromParams(params,
+                CollectDataServiceImpl.LAST_PRICE_POSITION)));
     }
 }

@@ -1,4 +1,4 @@
-package com.ua.osa.tradingbot.models.dto.privateReq.balance;
+package com.ua.osa.tradingbot.models.dto.privaterequest.balance;
 
 import com.ua.osa.tradingbot.models.dto.AbstractRequest;
 import com.ua.osa.tradingbot.models.dto.enums.TickerEnum;

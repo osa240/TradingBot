@@ -9,20 +9,20 @@ import com.ua.osa.tradingbot.repository.OrderBookStatisticRepository;
 import com.ua.osa.tradingbot.services.ai.dto.OperationEnum;
 import com.ua.osa.tradingbot.services.indicators.BollingerBands;
 import com.ua.osa.tradingbot.services.strategies.OrderBookStrategy;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class DecisionServiceImpl implements DecisionService {
-    public final AtomicReference<BigDecimal> lastPrice = new AtomicReference<>(BigDecimal.ZERO);
+    private final AtomicReference<BigDecimal> lastPrice = new AtomicReference<>(BigDecimal.ZERO);
 
     private final StrategyService strategyService;
     private final OperationService operationService;
@@ -30,10 +30,12 @@ public class DecisionServiceImpl implements DecisionService {
     private final OrderBookService orderBookService;
 
     @Override
-    public synchronized void makeDecisionByPriceHistory(List<BigDecimal> closingPrices, TradePair pair) {
+    public synchronized void makeDecisionByPriceHistory(List<BigDecimal> closingPrices,
+                                                        TradePair pair) {
         try {
             if (closingPrices.size() < 20) {
-                log.warn("Count {} of prices is below 20. Waiting please...", closingPrices.size());
+                log.warn("Count {} of prices is below 20. Waiting please...",
+                        closingPrices.size());
                 return;
             }
             BigDecimal lastPrice = closingPrices.getLast();
@@ -46,7 +48,9 @@ public class DecisionServiceImpl implements DecisionService {
 
     private void checkCurrentPriceByBollingerBands(List<BigDecimal> closingPrices) {
         // Розраховуємо Bollinger Bands
-        BollingerBands.BollingerBand bands = BollingerBands.calculateBollingerBands(closingPrices, 20, new BigDecimal("2"));
+        BollingerBands.BollingerBand bands = BollingerBands.calculateBollingerBands(
+                closingPrices, 20, new BigDecimal("2")
+        );
 
         // Приймаємо торгове рішення
         makeTradingDecision(bands);
@@ -71,8 +75,12 @@ public class DecisionServiceImpl implements DecisionService {
                     log.info("Buying...");
                     OrderBookStatistic orderBookStatistic = new OrderBookStatistic();
                     orderBookStatistic.setClosePrice(lastPrice);
-                    orderBookStatistic.setAsksTotalAmount(BigDecimal.valueOf(orderBook.getTotalAskVolume()));
-                    orderBookStatistic.setBidsTotalAmount(BigDecimal.valueOf(orderBook.getTotalBidVolume()));
+                    orderBookStatistic.setAsksTotalAmount(BigDecimal.valueOf(
+                            orderBook.getTotalAskVolume()
+                    ));
+                    orderBookStatistic.setBidsTotalAmount(BigDecimal.valueOf(
+                            orderBook.getTotalBidVolume()
+                    ));
                     orderBookStatistic.setIsOpen(false);
                     orderBookStatistic.setTimestamp(new Date());
 
@@ -83,8 +91,12 @@ public class DecisionServiceImpl implements DecisionService {
 
                     OrderBookStatistic orderBookStatistic = new OrderBookStatistic();
                     orderBookStatistic.setClosePrice(lastPrice);
-                    orderBookStatistic.setAsksTotalAmount(BigDecimal.valueOf(orderBook.getTotalAskVolume()));
-                    orderBookStatistic.setBidsTotalAmount(BigDecimal.valueOf(orderBook.getTotalBidVolume()));
+                    orderBookStatistic.setAsksTotalAmount(BigDecimal.valueOf(
+                            orderBook.getTotalAskVolume()
+                    ));
+                    orderBookStatistic.setBidsTotalAmount(BigDecimal.valueOf(
+                            orderBook.getTotalBidVolume()
+                    ));
                     orderBookStatistic.setIsOpen(true);
                     orderBookStatistic.setTimestamp(new Date());
 
@@ -114,10 +126,10 @@ public class DecisionServiceImpl implements DecisionService {
     }
 
     private int makeTradingDecision(BollingerBands.BollingerBand bands) {
-        if (bands.lastPrice.compareTo(bands.lowerBand) < 0) {
+        if (bands.getLastPrice().compareTo(bands.getLowerBand()) < 0) {
             makeDecisionByOrderBook(orderBookService.getOrderBook());
             return 1;
-        } else if (bands.lastPrice.compareTo(bands.upperBand) > 0) {
+        } else if (bands.getLastPrice().compareTo(bands.getUpperBand()) > 0) {
             makeDecisionByOrderBook(orderBookService.getOrderBook());
             return 2;
         } else {

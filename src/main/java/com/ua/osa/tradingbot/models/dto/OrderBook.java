@@ -1,6 +1,8 @@
 package com.ua.osa.tradingbot.models.dto;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 public class OrderBook {
     private NavigableMap<Double, Double> bids; // Цена -> Объем

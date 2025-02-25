@@ -2,19 +2,26 @@ package com.ua.osa.tradingbot.services;
 
 import com.ua.osa.tradingbot.models.dto.TradingRecord;
 import com.ua.osa.tradingbot.models.dto.TradingRecordOrderBook;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.stereotype.Service;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -26,16 +33,19 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public void generateReportStrategyStatistic(Map<Integer, List<TradingRecord>> statisticMap) {
-        String[] columns = {"Стратегія", "Час входу", "Час виходу", "Ціна входу", "Ціна виходу", "Різниця"};
+        String[] columns = {"Стратегія",
+                "Час входу",
+                "Час виходу",
+                "Ціна входу",
+                "Ціна виходу",
+                "Різниця"};
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Strategy Statistic");
-
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerFont.setColor(IndexedColors.RED.getIndex());
-
             CellStyle headerCellStyle = workbook.createCellStyle();
             headerCellStyle.setFont(headerFont);
+            Sheet sheet = workbook.createSheet("Strategy Statistic");
 
             // Створюємо заголовок
             Row headerRow = sheet.createRow(0);
@@ -57,10 +67,16 @@ public class ReportServiceImpl implements ReportService {
                     for (TradingRecord tradingRecord : tradingRecords) {
                         Row row = sheet.createRow(rowIdx++);
                         row.createCell(0).setCellValue(tradingRecord.getIndicator().name());
-                        row.createCell(1).setCellValue(DateFormatUtils.format(tradingRecord.getTimestampOpen(), "HH:mm:ss dd:MM:YYYY"));
-                        row.createCell(2).setCellValue(DateFormatUtils.format(tradingRecord.getTimestampClose(), "HH:mm:ss dd:MM:YYYY"));
+                        row.createCell(1).setCellValue(DateFormatUtils.format(
+                                tradingRecord.getTimestampOpen(), "HH:mm:ss dd:MM:YYYY")
+                        );
+                        row.createCell(2).setCellValue(DateFormatUtils.format(
+                                tradingRecord.getTimestampClose(), "HH:mm:ss dd:MM:YYYY")
+                        );
                         row.createCell(3).setCellValue(tradingRecord.getPriceOpen().doubleValue());
-                        row.createCell(4).setCellValue(tradingRecord.getPriceClose().doubleValue());
+                        row.createCell(4).setCellValue(
+                                tradingRecord.getPriceClose().doubleValue()
+                        );
                         row.createCell(5).setCellValue(tradingRecord.getDif().doubleValue());
                     }
                 }
@@ -80,16 +96,22 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public void generateReportStrategyStatistic(List<TradingRecordOrderBook> statistic) {
-        String[] columns = {"Час входу", "Ціна входу", "Об'єм BID при купівлі", "Об'єм ASK при продажу", "Час виходу", "Ціна виходу", "Об'єм BID при продажу", "Об'єм ASK при продажу", "Різниця"};
+        String[] columns = {"Час входу",
+                "Ціна входу",
+                "Об'єм BID при купівлі",
+                "Об'єм ASK при продажу",
+                "Час виходу",
+                "Ціна виходу",
+                "Об'єм BID при продажу",
+                "Об'єм ASK при продажу",
+                "Різниця"};
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("OrderBook Statistic");
-
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerFont.setColor(IndexedColors.RED.getIndex());
-
             CellStyle headerCellStyle = workbook.createCellStyle();
             headerCellStyle.setFont(headerFont);
+            Sheet sheet = workbook.createSheet("OrderBook Statistic");
 
             // Створюємо заголовок
             Row headerRow = sheet.createRow(0);
@@ -105,13 +127,16 @@ public class ReportServiceImpl implements ReportService {
             for (TradingRecordOrderBook tradingRecord : statistic) {
                 Row row = sheet.createRow(rowIdx++);
 
-                row.createCell(0).setCellValue(DateFormatUtils.format(tradingRecord.getTimestampOpen(), "HH:mm:ss dd:MM:YYYY"));
+                row.createCell(0).setCellValue(DateFormatUtils.format(
+                        tradingRecord.getTimestampOpen(), "HH:mm:ss dd:MM:YYYY")
+                );
                 row.createCell(1).setCellValue(tradingRecord.getPriceOpen().doubleValue());
                 row.createCell(2).setCellValue(tradingRecord.getBidsAmountOpen().doubleValue());
                 row.createCell(3).setCellValue(tradingRecord.getAsksAmountOpen().doubleValue());
 
-
-                row.createCell(4).setCellValue(DateFormatUtils.format(tradingRecord.getTimestampClose(), "HH:mm:ss dd:MM:YYYY"));
+                row.createCell(4).setCellValue(DateFormatUtils.format(
+                        tradingRecord.getTimestampClose(), "HH:mm:ss dd:MM:YYYY")
+                );
                 row.createCell(5).setCellValue(tradingRecord.getPriceClose().doubleValue());
                 row.createCell(6).setCellValue(tradingRecord.getBidsAmountClose().doubleValue());
                 row.createCell(7).setCellValue(tradingRecord.getAsksAmountClose().doubleValue());
@@ -124,8 +149,7 @@ public class ReportServiceImpl implements ReportService {
             try (FileOutputStream fileOut = new FileOutputStream(path.toFile())) {
                 workbook.write(fileOut);
             }
-        } catch (
-                IOException e) {
+        } catch (IOException e) {
             log.error(e.getMessage(), e);
         }
 

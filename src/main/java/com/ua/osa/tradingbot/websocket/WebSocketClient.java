@@ -1,17 +1,5 @@
 package com.ua.osa.tradingbot.websocket;
 
-import java.lang.reflect.Method;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import com.google.gson.Gson;
 import com.ua.osa.tradingbot.AppProperties;
 import com.ua.osa.tradingbot.BotSettings;
@@ -27,6 +15,17 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.SingletonDnsServerAddressStreamProvider;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -50,9 +49,12 @@ public class WebSocketClient {
     private final AtomicBoolean isReconnecting = new AtomicBoolean(false);
     private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
     private final AtomicReference<WebSocketSession> sessionRef = new AtomicReference<>(null);
-    private final AtomicReference<ReactorNettyWebSocketClient> client = new AtomicReference<>(null);
+    private final AtomicReference<ReactorNettyWebSocketClient> client =
+            new AtomicReference<>(null);
     private final AtomicReference<Disposable> subscribe = new AtomicReference<>(null);
-    private final MessageRequest pingRequest = new MessageRequest(0, WebSocketMethodEnum.ping.name(), new ArrayList<>());
+    private final MessageRequest pingRequest = new MessageRequest(
+            0, WebSocketMethodEnum.ping.name(), new ArrayList<>()
+    );
     private final CollectDataService collectDataService;
     private final TaskManager taskManager;
 
@@ -94,12 +96,57 @@ public class WebSocketClient {
     }
 
     private Mono<Void> handleSession(WebSocketSession session) {
+        Mono<Void> send = createSend(session);
+        Mono<Void> receive = createReceive(session);
+        sessionRef.set(session);
+        taskManager.schedule(this::restartSubscribes, 5000, TimeUnit.MILLISECONDS);
+        Mono<Void> zip = Mono.zip(send, receive).then();
+        log.info("WebSocketConnection established");
+        return zip;
+    }
 
+    private void restartSubscribes() {
+        log.info("Restart all subscribes");
+
+        TradePair tradePair = BotSettings.TRADE_PAIR.get();
+        for (WebSocketMethodEnum webSocketMethodEnum : BotSettings.SUBSCRIBES.get()) {
+            if (webSocketMethodEnum.equals(WebSocketMethodEnum.lastprice_subscribe)) {
+                sendMessage(new MessageRequest(
+                        webSocketMethodEnum.ordinal(),
+                        webSocketMethodEnum.name(),
+                        List.of(tradePair)
+                ));
+            } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.candles_subscribe)) {
+                sendMessage(new MessageRequest(
+                        webSocketMethodEnum.ordinal(),
+                        webSocketMethodEnum.name(),
+                        List.of(tradePair, 60)
+                ));
+            } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.depth_subscribe)) {
+                sendMessage(new MessageRequest(
+                        webSocketMethodEnum.ordinal(),
+                        webSocketMethodEnum.name(),
+                        List.of(tradePair, 100, "100", true)
+                ));
+            }
+        }
+    }
+
+    private Mono<Void> createReceive(WebSocketSession session) {
+        Mono<Void> receive = session.receive()
+                .map(WebSocketMessage::getPayloadAsText)
+                .flatMap(this::handleMessage)
+                .then();
+        return receive;
+    }
+
+    private Mono<Void> createSend(WebSocketSession session) {
         Mono<Void> send = session.send(
                 Flux.interval(Duration.ofSeconds(29))
                         .map(time -> {
-                            if (!AppProperties.isInternetAvailable())
+                            if (!AppProperties.isInternetAvailable()) {
                                 throw new RuntimeException("The internet is unreachable");
+                            }
                             return session.textMessage(getPayload(pingRequest));
                         }).mergeWith(Flux.fromIterable(messageQueue)
                         .map(session::textMessage))
@@ -109,28 +156,7 @@ public class WebSocketClient {
                             reconnectAndSend(getPayload(pingRequest));
                         })
         );
-        Mono<Void> receive = session.receive()
-                .map(WebSocketMessage::getPayloadAsText)
-                .flatMap(this::handleMessage)
-                .then();
-
-        sessionRef.set(session);
-        taskManager.schedule(() -> {
-            log.info("Restart all subscribes");
-
-            TradePair tradePair = BotSettings.TRADE_PAIR.get();
-            for (WebSocketMethodEnum webSocketMethodEnum : BotSettings.SUBSCRIBES.get()) {
-                if (webSocketMethodEnum.equals(WebSocketMethodEnum.lastprice_subscribe)) {
-                    sendMessage(new MessageRequest(webSocketMethodEnum.ordinal(), webSocketMethodEnum.name(), List.of(tradePair)));
-                } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.candles_subscribe)) {
-                    sendMessage(new MessageRequest(webSocketMethodEnum.ordinal(), webSocketMethodEnum.name(), List.of(tradePair, 60)));
-                } else if (webSocketMethodEnum.equals(WebSocketMethodEnum.depth_subscribe)) {
-                    sendMessage(new MessageRequest(webSocketMethodEnum.ordinal(), webSocketMethodEnum.name(), List.of(tradePair, 100, "100", true)));
-                }
-            }
-        }, 5000, TimeUnit.MILLISECONDS);
-        log.info("WebSocketConnection established");
-        return Mono.zip(send, receive).then();
+        return send;
     }
 
     private String getPayload(MessageRequest messageRequest) {
@@ -213,7 +239,8 @@ public class WebSocketClient {
 
         // Create TcpClient with DNS configuration
         TcpClient tcpClient = TcpClient.create()
-                .resolver(spec -> spec.dnsAddressResolverGroupProvider(DnsAddressResolverGroup::new))
+                .resolver(spec -> spec.dnsAddressResolverGroupProvider(
+                        DnsAddressResolverGroup::new))
                 .secure(sslContextSpec -> sslContextSpec.sslContext(sslContext));
 
         // Create HttpClient with TcpClient

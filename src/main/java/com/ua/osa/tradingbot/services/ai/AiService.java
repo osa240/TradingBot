@@ -2,11 +2,22 @@ package com.ua.osa.tradingbot.services.ai;
 
 import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.MinMaxPoint;
-import com.ua.osa.tradingbot.models.dto.publicReq.kline.KlineResponse;
-import com.ua.osa.tradingbot.restClients.WhiteBitClient;
+import com.ua.osa.tradingbot.models.dto.publicrequest.kline.KlineResponse;
+import com.ua.osa.tradingbot.restcients.WhiteBitClient;
 import com.ua.osa.tradingbot.scheduler.TaskManager;
 import com.ua.osa.tradingbot.services.ai.dto.EducateModel;
 import com.ua.osa.tradingbot.services.ai.dto.OperationEnum;
+import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
@@ -29,7 +40,11 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.springframework.stereotype.Component;
-import org.ta4j.core.*;
+import org.ta4j.core.Bar;
+import org.ta4j.core.BarSeries;
+import org.ta4j.core.BaseBar;
+import org.ta4j.core.BaseBarSeries;
+import org.ta4j.core.Indicator;
 import org.ta4j.core.indicators.MACDIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
 import org.ta4j.core.indicators.SMAIndicator;
@@ -41,13 +56,11 @@ import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.num.Num;
 
-import java.io.File;
-import java.time.*;
-import java.util.*;
-
 @Component
 @Slf4j
 public class AiService {
+    public static final String INTERVAL = "1m";
+    public static final String LIMIT = "1440";
     private final String modelPath = "D:\\tradingModel.zip";
     private final String modelPathUi = "D:\\tradingModelUI";
     private final String prop = "D:\\dl4j-ui-conf.xml";
@@ -94,10 +107,14 @@ public class AiService {
         MACDIndicator macd = new MACDIndicator(closePrice, 12, 26);
 
         Num factor = series.numOf(2);
-        BollingerBandsMiddleIndicator bbMiddle = new BollingerBandsMiddleIndicator(new SMAIndicator(closePrice, 20));
-        BollingerBandsUpperIndicator bbUpper = new BollingerBandsUpperIndicator(bbMiddle, closePrice, factor);
-        BollingerBandsLowerIndicator bbLower = new BollingerBandsLowerIndicator(bbMiddle, closePrice, factor);
-        StochasticOscillatorKIndicator stochasticK = new StochasticOscillatorKIndicator(series, 14);
+        BollingerBandsMiddleIndicator bbMiddle = new BollingerBandsMiddleIndicator(
+                new SMAIndicator(closePrice, 20));
+        BollingerBandsUpperIndicator bbUpper = new BollingerBandsUpperIndicator(
+                bbMiddle, closePrice, factor);
+        BollingerBandsLowerIndicator bbLower = new BollingerBandsLowerIndicator(
+                bbMiddle, closePrice, factor);
+        StochasticOscillatorKIndicator stochasticK = new StochasticOscillatorKIndicator(
+                series, 14);
 
         INDArray testFeatures = Nd4j.create(new double[][]{
                 {
@@ -146,16 +163,22 @@ public class AiService {
         return model;
     }
 
-    private void prepareDataAndEducate(BarSeries series, Set<Double> buyPricesClear, Set<Double> sellPricesClear) {
+    private void prepareDataAndEducate(BarSeries series,
+                                       Set<Double> buyPricesClear,
+                                       Set<Double> sellPricesClear) {
         // Розрахунок індикаторів
         Indicator<Num> closePrice = new ClosePriceIndicator(series);
         RSIIndicator rsi = new RSIIndicator(closePrice, 14);
         MACDIndicator macd = new MACDIndicator(closePrice, 12, 26);
         Num factor = series.numOf(2);
-        BollingerBandsMiddleIndicator bbMiddle = new BollingerBandsMiddleIndicator(new SMAIndicator(closePrice, 20));
-        BollingerBandsUpperIndicator bbUpper = new BollingerBandsUpperIndicator(bbMiddle, closePrice, factor);
-        BollingerBandsLowerIndicator bbLower = new BollingerBandsLowerIndicator(bbMiddle, closePrice, factor);
-        StochasticOscillatorKIndicator stochasticK = new StochasticOscillatorKIndicator(series, 14);
+        BollingerBandsMiddleIndicator bbMiddle = new BollingerBandsMiddleIndicator(
+                new SMAIndicator(closePrice, 20));
+        BollingerBandsUpperIndicator bbUpper = new BollingerBandsUpperIndicator(
+                bbMiddle, closePrice, factor);
+        BollingerBandsLowerIndicator bbLower = new BollingerBandsLowerIndicator(
+                bbMiddle, closePrice, factor);
+        StochasticOscillatorKIndicator stochasticK = new StochasticOscillatorKIndicator(
+                series, 14);
 
         // Розбивка на тренувальні та тестові данні
         int numSamples = series.getBarCount();
@@ -168,8 +191,17 @@ public class AiService {
         double[][] featuresTest = new double[testSize][8];
         int[][] labelsTest = new int[testSize][3];
 
-        List<EducateModel> data = getEducatadedData(series, buyPricesClear, sellPricesClear, closePrice, rsi, macd,
-                bbMiddle, bbUpper, bbLower, stochasticK);
+        List<EducateModel> data = getEducatadedData(series,
+                buyPricesClear,
+                sellPricesClear,
+                closePrice,
+                rsi,
+                macd,
+                bbMiddle,
+                bbUpper,
+                bbLower,
+                stochasticK
+        );
 
         int j = 0;
         for (int i = 0; i < data.size(); i++) {
@@ -183,13 +215,13 @@ public class AiService {
             }
         }
 
-        INDArray featuresINDArrayTrain = Nd4j.create(featuresTrain);
-        INDArray labelsINDArrayTrain = Nd4j.create(labelsTrain);
-        INDArray featuresINDArrayTest = Nd4j.create(featuresTest);
-        INDArray labelsINDArrayTest = Nd4j.create(labelsTest);
+        INDArray featuresIndArrayTrain = Nd4j.create(featuresTrain);
+        INDArray labelsIndArrayTrain = Nd4j.create(labelsTrain);
+        INDArray featuresIndArrayTest = Nd4j.create(featuresTest);
+        INDArray labelsIndArrayTest = Nd4j.create(labelsTest);
 
-        DataSet trainData = new DataSet(featuresINDArrayTrain, labelsINDArrayTrain);
-        DataSet testData = new DataSet(featuresINDArrayTest, labelsINDArrayTest);
+        DataSet trainData = new DataSet(featuresIndArrayTrain, labelsIndArrayTrain);
+        DataSet testData = new DataSet(featuresIndArrayTest, labelsIndArrayTest);
 
         // Нормалізація данних
         DataNormalization normalizer = new NormalizerMinMaxScaler();
@@ -288,9 +320,13 @@ public class AiService {
             } else {
                 label = 0;
             }
-            data.add(new EducateModel(label, rsi.getValue(i).doubleValue(), macd.getValue(i).doubleValue(),
-                    bbMiddle.getValue(i).doubleValue(), bbUpper.getValue(i).doubleValue(),
-                    bbLower.getValue(i).doubleValue(), stochasticK.getValue(i).doubleValue(),
+            data.add(new EducateModel(label,
+                    rsi.getValue(i).doubleValue(),
+                    macd.getValue(i).doubleValue(),
+                    bbMiddle.getValue(i).doubleValue(),
+                    bbUpper.getValue(i).doubleValue(),
+                    bbLower.getValue(i).doubleValue(),
+                    stochasticK.getValue(i).doubleValue(),
                     series.getBarData().getLast().getVolume().doubleValue(),
                     series.getBarData().getLast().getAmount().doubleValue()
             ));
@@ -307,11 +343,18 @@ public class AiService {
             long start = 1_710_783_000;
             long end = start + week;
             for (int i = 0; i < 30; i++) {
-                KlineResponse response = whiteBitClient.getKlains(BotSettings.TRADE_PAIR.get().name(),
-                        "1m", "1440", start, end);
+                KlineResponse response = whiteBitClient.getKlains(
+                        BotSettings.TRADE_PAIR.get().name(),
+                        INTERVAL,
+                        LIMIT,
+                        start,
+                        end
+                );
                 for (List<Object> kline : response.getResult()) {
                     long timestamp = ((Number) kline.get(0)).longValue();
-                    ZonedDateTime endTime = ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp), ZoneId.systemDefault());
+                    ZonedDateTime endTime = ZonedDateTime.ofInstant(
+                            Instant.ofEpochSecond(timestamp), ZoneId.systemDefault()
+                    );
                     Num open = DecimalNum.valueOf((String) kline.get(1));
                     Num high = DecimalNum.valueOf((String) kline.get(3));
                     Num low = DecimalNum.valueOf((String) kline.get(4));
@@ -372,7 +415,8 @@ public class AiService {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Adam())
                 .weightInit(WeightInit.XAVIER)
-                .l2(0.001)  // Пример коэффициента L2 регуляризации
+                // Приклад коефіцієнта L2 регулярізації
+                .l2(0.001)
                 .list()
                 .layer(new DenseLayer.Builder()
                         .nIn(8)
@@ -393,7 +437,8 @@ public class AiService {
                         .activation(Activation.SOFTMAX)
                         .nIn(32)
                         .nOut(3)
-                        .weightInit(WeightInit.XAVIER)  // Инициализация весов
+                        // Ініціалізація ваги
+                        .weightInit(WeightInit.XAVIER)
                         .build())
                 .build());
     }
@@ -412,10 +457,12 @@ public class AiService {
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.XENT)  // Используем логистическую регрессию
+                // Використовуємо логістичну регресію
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.XENT)
                         .nIn(16)
                         .nOut(3)
-                        .activation(Activation.SIGMOID)  // Функция активации Sigmoid для бинарной классификации
+                        // Функція активації Sigmoid для бінарної класифікації
+                        .activation(Activation.SIGMOID)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .build());

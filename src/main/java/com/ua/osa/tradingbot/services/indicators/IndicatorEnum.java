@@ -1,10 +1,16 @@
 package com.ua.osa.tradingbot.services.indicators;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseStrategy;
 import org.ta4j.core.Rule;
 import org.ta4j.core.Strategy;
-import org.ta4j.core.indicators.*;
+import org.ta4j.core.indicators.EMAIndicator;
+import org.ta4j.core.indicators.MACDIndicator;
+import org.ta4j.core.indicators.RSIIndicator;
+import org.ta4j.core.indicators.SMAIndicator;
+import org.ta4j.core.indicators.StochasticOscillatorKIndicator;
 import org.ta4j.core.indicators.adx.ADXIndicator;
 import org.ta4j.core.indicators.adx.MinusDIIndicator;
 import org.ta4j.core.indicators.adx.PlusDIIndicator;
@@ -17,9 +23,6 @@ import org.ta4j.core.rules.CrossedDownIndicatorRule;
 import org.ta4j.core.rules.CrossedUpIndicatorRule;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public enum IndicatorEnum {
     AI,
@@ -57,8 +60,10 @@ public enum IndicatorEnum {
         PlusDIIndicator plusDI = new PlusDIIndicator(series, 14);
         MinusDIIndicator minusDI = new MinusDIIndicator(series, 14);
 
-        Rule entryRule = new OverIndicatorRule(adx, 20).and(new CrossedUpIndicatorRule(plusDI, minusDI));
-        Rule exitRule = new OverIndicatorRule(adx, 20).and(new CrossedDownIndicatorRule(plusDI, minusDI));
+        Rule entryRule = new OverIndicatorRule(adx, 20)
+                .and(new CrossedUpIndicatorRule(plusDI, minusDI));
+        Rule exitRule = new OverIndicatorRule(adx, 20)
+                .and(new CrossedDownIndicatorRule(plusDI, minusDI));
 
         return new BaseStrategy(ADX.name(), entryRule, exitRule);
     }
@@ -74,7 +79,8 @@ public enum IndicatorEnum {
     }
 
     private static Strategy buildStickastikOscillator(BarSeries series) {
-        StochasticOscillatorKIndicator stochasticOscillatorK = new StochasticOscillatorKIndicator(series, 14);
+        StochasticOscillatorKIndicator stochasticOscillatorK =
+                new StochasticOscillatorKIndicator(series, 14);
 
         Rule entryRule = new CrossedUpIndicatorRule(stochasticOscillatorK, 20);
         Rule exitRule = new CrossedDownIndicatorRule(stochasticOscillatorK, 80);

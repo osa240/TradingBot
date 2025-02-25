@@ -1,10 +1,9 @@
-package com.ua.osa.tradingbot.models.dto.privateReq.limitOrder;
+package com.ua.osa.tradingbot.models.dto.privaterequest.limitorder;
 
-import java.math.BigDecimal;
-import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ua.osa.tradingbot.models.dto.enums.SideEnum;
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
+import java.math.BigDecimal;
 import lombok.Data;
 
 @Data

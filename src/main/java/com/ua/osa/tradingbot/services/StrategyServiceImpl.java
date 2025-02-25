@@ -1,5 +1,9 @@
 package com.ua.osa.tradingbot.services;
 
+import static com.ua.osa.tradingbot.services.ai.dto.OperationEnum.BUY;
+import static com.ua.osa.tradingbot.services.ai.dto.OperationEnum.SELL;
+import static com.ua.osa.tradingbot.services.ai.dto.OperationEnum.WAIT;
+
 import com.ua.osa.tradingbot.models.dto.enums.TradePair;
 import com.ua.osa.tradingbot.models.entity.StrategyStatistic;
 import com.ua.osa.tradingbot.repository.StrategyStatisticRepository;
@@ -8,11 +12,20 @@ import com.ua.osa.tradingbot.services.ai.AiService;
 import com.ua.osa.tradingbot.services.ai.dto.OperationEnum;
 import com.ua.osa.tradingbot.services.indicators.FibonacciRetracementLevels;
 import com.ua.osa.tradingbot.services.indicators.IndicatorEnum;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.ta4j.core.*;
-import org.ta4j.core.indicators.*;
+import org.ta4j.core.BarSeries;
+import org.ta4j.core.Strategy;
+import org.ta4j.core.indicators.EMAIndicator;
+import org.ta4j.core.indicators.MACDIndicator;
+import org.ta4j.core.indicators.RSIIndicator;
+import org.ta4j.core.indicators.SMAIndicator;
+import org.ta4j.core.indicators.StochasticOscillatorDIndicator;
+import org.ta4j.core.indicators.StochasticOscillatorKIndicator;
 import org.ta4j.core.indicators.adx.ADXIndicator;
 import org.ta4j.core.indicators.adx.MinusDIIndicator;
 import org.ta4j.core.indicators.adx.PlusDIIndicator;
@@ -23,12 +36,6 @@ import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.indicators.helpers.VolumeIndicator;
 import org.ta4j.core.indicators.statistics.StandardDeviationIndicator;
 import org.ta4j.core.num.Num;
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-
-import static com.ua.osa.tradingbot.services.ai.dto.OperationEnum.*;
 
 @Component
 @Slf4j
@@ -120,13 +127,16 @@ public class StrategyServiceImpl implements StrategyService {
             case BUY -> entire++;
             case SELL -> exit++;
             case WAIT -> wait++;
+            default -> log.error("");
         }
         int endIndex = series.getEndIndex();
         log.info("-----------------");
         log.info("AI: {}.", this.ai);
         StrategyStatistic strategyStatistic = new StrategyStatistic();
         strategyStatistic.setAi(this.ai.ordinal());
-        strategyStatistic.setClosePrice(BigDecimal.valueOf(series.getLastBar().getClosePrice().doubleValue()));
+        strategyStatistic.setClosePrice(BigDecimal.valueOf(
+                series.getLastBar().getClosePrice().doubleValue()
+        ));
         for (Strategy strategy : strategies) {
             int result = 0;
             if (strategy.shouldEnter(endIndex)) {
@@ -172,7 +182,9 @@ public class StrategyServiceImpl implements StrategyService {
         return result;
     }
 
-    private void addStrategyResult(Strategy strategy, StrategyStatistic strategyStatistic, int tmp) {
+    private void addStrategyResult(Strategy strategy,
+                                   StrategyStatistic strategyStatistic,
+                                   int tmp) {
         String strategyName = strategy.getName();
         if (IndicatorEnum.MA.name().equals(strategyName)) {
             strategyStatistic.setMa(tmp);

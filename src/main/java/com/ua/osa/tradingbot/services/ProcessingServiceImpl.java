@@ -1,12 +1,12 @@
 package com.ua.osa.tradingbot.services;
 
 import com.ua.osa.tradingbot.BotSettings;
+import java.math.BigDecimal;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
-import java.math.BigDecimal;
-import java.util.List;
 
 @Component
 @Slf4j

@@ -1,9 +1,9 @@
-package com.ua.osa.tradingbot.models.dto.publicReq.orderbook;
+package com.ua.osa.tradingbot.models.dto.publicrequest.orderbook;
 
-import java.util.ArrayList;
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 @Data

@@ -1,8 +1,9 @@
 package com.ua.osa.tradingbot.services.strategies;
 
 import com.ua.osa.tradingbot.models.dto.OrderBook;
-import org.ta4j.core.*;
-import org.ta4j.core.num.Num;
+import org.ta4j.core.BaseStrategy;
+import org.ta4j.core.Rule;
+import org.ta4j.core.TradingRecord;
 
 public class OrderBookStrategy extends BaseStrategy {
 
@@ -23,7 +24,8 @@ public class OrderBookStrategy extends BaseStrategy {
                 System.out.println("totalBidVolume: " + totalBidVolume);
                 System.out.println("totalAskVolume: " + totalAskVolume);
                 System.out.println("Disbalance: " + (totalBidVolume - totalAskVolume * 1.5));
-                return totalBidVolume > totalAskVolume * 1.5; // Если объем заявок на покупку в 1.5 раза больше объема заявок на продажу
+                // Якщо об'єм заявок на купівлю в 1.5 рази більше аніж на продаж
+                return totalBidVolume > totalAskVolume * 1.5;
             }
         };
     }
@@ -38,7 +40,8 @@ public class OrderBookStrategy extends BaseStrategy {
                 System.out.println("totalBidVolume: " + totalBidVolume);
                 System.out.println("totalAskVolume: " + totalAskVolume);
                 System.out.println("Disbalance: " + (totalAskVolume - totalBidVolume * 1.5));
-                return totalAskVolume > totalBidVolume * 1.5; // Если объем заявок на продажу в 1.5 раза больше объема заявок на покупку
+                // Якщо об'єм заявок на продаж в 1.5 рази більше аніж на купівлю
+                return totalAskVolume > totalBidVolume * 1.5;
             }
         };
     }

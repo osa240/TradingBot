@@ -1,4 +1,4 @@
-package com.ua.osa.tradingbot.models.dto.publicReq.pair;
+package com.ua.osa.tradingbot.models.dto.publicrequest.pair;
 
 import lombok.Data;
 

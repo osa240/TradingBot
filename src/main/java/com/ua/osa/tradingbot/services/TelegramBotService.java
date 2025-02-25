@@ -4,6 +4,9 @@ import static com.ua.osa.tradingbot.AppProperties.IS_BUY_ALREADY;
 
 import com.ua.osa.tradingbot.config.TelegramConfig;
 import jakarta.annotation.PostConstruct;
+import java.io.File;
+import java.util.LinkedList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -14,10 +17,6 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import java.io.File;
-import java.util.LinkedList;
-import java.util.List;
 
 @Service
 @Slf4j

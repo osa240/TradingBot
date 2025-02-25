@@ -1,7 +1,7 @@
-package com.ua.osa.tradingbot.models.dto.publicReq.kline;
+package com.ua.osa.tradingbot.models.dto.publicrequest.kline;
 
-import lombok.Data;
 import java.math.BigDecimal;
+import lombok.Data;
 
 @Data
 public class KlineDto {

@@ -19,7 +19,9 @@ public class FibonacciRetracementLevels extends AbstractIndicator<Num> {
         high = getBarSeries().getBar(getBarSeries().getEndIndex()).getHighPrice();
         low = getBarSeries().getBar(getBarSeries().getEndIndex()).getLowPrice();
 
-        for (int i = Math.max(0, getBarSeries().getEndIndex() - period + 1); i <= getBarSeries().getEndIndex(); i++) {
+        for (int i = Math.max(0, getBarSeries().getEndIndex() - period + 1);
+                i <= getBarSeries().getEndIndex();
+                i++) {
             if (getBarSeries().getBar(i).getHighPrice().isGreaterThan(high)) {
                 high = getBarSeries().getBar(i).getHighPrice();
             }

@@ -1,10 +1,14 @@
 package com.ua.osa.tradingbot.models.entity;
 
-import jakarta.persistence.*;
-import lombok.Data;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.Date;
+import lombok.Data;
 
 @Entity
 @Table(name = "strategy_statistic")

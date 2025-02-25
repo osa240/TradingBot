@@ -1,7 +1,7 @@
 package com.ua.osa.tradingbot.config;
 
-import com.ua.osa.tradingbot.restClients.AuthInterceptor;
-import com.ua.osa.tradingbot.restClients.WhiteBitClient;
+import com.ua.osa.tradingbot.restcients.AuthInterceptor;
+import com.ua.osa.tradingbot.restcients.WhiteBitClient;
 import feign.Feign;
 import feign.Logger;
 import feign.gson.GsonDecoder;

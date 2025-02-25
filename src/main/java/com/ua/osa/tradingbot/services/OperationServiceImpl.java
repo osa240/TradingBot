@@ -7,16 +7,16 @@ import static com.ua.osa.tradingbot.BotSettings.BUY_AMOUNT;
 import com.ua.osa.tradingbot.BotSettings;
 import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import com.ua.osa.tradingbot.models.dto.enums.SideEnum;
-import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.LimitOrderRequest;
-import com.ua.osa.tradingbot.models.dto.privateReq.limitOrder.OrderResponse;
-import com.ua.osa.tradingbot.models.dto.privateReq.marketOrder.MarketOrderRequest;
-import com.ua.osa.tradingbot.restClients.WhiteBitClient;
+import com.ua.osa.tradingbot.models.dto.privaterequest.limitorder.LimitOrderRequest;
+import com.ua.osa.tradingbot.models.dto.privaterequest.limitorder.OrderResponse;
+import com.ua.osa.tradingbot.models.dto.privaterequest.marketorder.MarketOrderRequest;
+import com.ua.osa.tradingbot.restcients.WhiteBitClient;
 import com.ua.osa.tradingbot.scheduler.TaskManager;
+import java.math.BigDecimal;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import java.math.BigDecimal;
-import java.util.Objects;
 
 @Component
 @Slf4j
@@ -51,7 +51,7 @@ public class OperationServiceImpl implements OperationService {
             taskManager.execute(() -> {
                 try {
                     telegramBotService.sendMessageToUser(String.format("""
-                                    \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2
+                                    🟢 🟢 🟢
                                     КІПІВЛЯ*
                                     *прохання перевірити
                                     -------------------------
@@ -59,7 +59,7 @@ public class OperationServiceImpl implements OperationService {
                                     Об'єм: %s
                                     -------------------------
                                     Сума: %s
-                                    \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2""",
+                                    🟢 🟢 🟢""",
                             price, BUY_AMOUNT.get(), closeAmountToBuy));
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
@@ -115,17 +115,17 @@ public class OperationServiceImpl implements OperationService {
                     BigDecimal buingAmount = BUY_AMOUNT.get();
                     BigDecimal lastPrice = request.getPrice();
 
-                    log.info("---------------------------------------------------------------------------------------");
+                    log.info("----------------------------------------------------------------");
                     log.info("Statistic: ");
                     log.info("Buy on {}, sell on {}", buingPrice, lastPrice);
                     BigDecimal different = lastPrice.subtract(buingPrice);
                     log.info("different: {}", different);
                     log.info("diffrrent in money: {}", different.multiply(buingAmount));
-                    log.info("---------------------------------------------------------------------------------------");
+                    log.info("-----------------------------------------------------------------");
 
                     BigDecimal sellSum = lastPrice.multiply(buingAmount);
                     telegramBotService.sendMessageToUser(String.format("""
-                                    \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34
+                                    🔴 🔴 🔴
                                     П Р О Д А Ж*
                                     *прохання перевірити
                                     --------------------------
@@ -136,8 +136,11 @@ public class OperationServiceImpl implements OperationService {
                                     ::::::::::::::::::::::::::
                                     Результат: %s
                                     ::::::::::::::::::::::::::
-                                    \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34""",
-                            lastPrice, buingAmount, sellSum, sellSum.subtract(CLOSE_BUY_AMOUNT.get())));
+                                    🔴 🔴 🔴""",
+                            lastPrice,
+                            buingAmount,
+                            sellSum,
+                            sellSum.subtract(CLOSE_BUY_AMOUNT.get())));
                 } catch (Exception e1) {
                     log.error(e1.getMessage(), e1);
                 }
@@ -191,12 +194,12 @@ public class OperationServiceImpl implements OperationService {
             taskManager.execute(() -> {
                 try {
                     telegramBotService.sendMessageToUser(String.format("""
-                                    \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2
+                                    🟢 🟢 🟢
                                     Купівля
                                     -------------------------
                                     Об'єм: %s
                                     Сума: 10
-                                    \uD83D\uDFE2 \uD83D\uDFE2 \uD83D\uDFE2""",
+                                    🟢 🟢 🟢""",
                             CLOSE_BUY_AMOUNT.get()));
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
@@ -251,7 +254,7 @@ public class OperationServiceImpl implements OperationService {
                 taskManager.execute(() -> {
                     try {
                         telegramBotService.sendMessageToUser(String.format("""
-                                    \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34
+                                    🔴 🔴 🔴
                                     Продаємо
                                     --------------------------
                                     Об'єм: %s
@@ -259,8 +262,10 @@ public class OperationServiceImpl implements OperationService {
                                     ::::::::::::::::::::::::::
                                     Результат: %s
                                     ::::::::::::::::::::::::::
-                                    \uD83D\uDD34 \uD83D\uDD34 \uD83D\uDD34""",
-                                CLOSE_BUY_AMOUNT.get(), amountForSell, amountForSell.subtract(new BigDecimal("10"))));
+                                    🔴 🔴 🔴""",
+                                CLOSE_BUY_AMOUNT.get(),
+                                amountForSell,
+                                amountForSell.subtract(new BigDecimal("10"))));
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }

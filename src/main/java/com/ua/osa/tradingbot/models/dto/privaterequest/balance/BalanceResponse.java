@@ -1,4 +1,4 @@
-package com.ua.osa.tradingbot.models.dto.privateReq.balance;
+package com.ua.osa.tradingbot.models.dto.privaterequest.balance;
 
 import java.math.BigDecimal;
 import lombok.Getter;

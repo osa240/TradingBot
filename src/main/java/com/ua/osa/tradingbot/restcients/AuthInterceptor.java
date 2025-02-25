@@ -1,21 +1,21 @@
-package com.ua.osa.tradingbot.restClients;
+package com.ua.osa.tradingbot.restcients;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
-import java.util.Formatter;
-import java.util.Objects;
 import com.google.gson.Gson;
 import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
+import java.util.Base64;
+import java.util.Formatter;
+import java.util.Objects;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 
 public class AuthInterceptor implements RequestInterceptor {
     @Value("${whitebit.api.key}")
-    private String API_KEY;
+    private String apiKey;
     @Value("${whitebit.api.secret}")
-    private String API_SECRET;
+    private String apiSecret;
 
     @Override
     public void apply(RequestTemplate requestTemplate) {
@@ -26,7 +26,7 @@ public class AuthInterceptor implements RequestInterceptor {
             String payload = getPayload(bodyString.getBytes());
             requestTemplate
                     .header("Content-type", "application/json")
-                    .header("X-TXC-APIKEY", API_KEY)
+                    .header("X-TXC-APIKEY", apiKey)
                     .header("X-TXC-PAYLOAD", payload)
                     .header("X-TXC-SIGNATURE", calcSignature(payload));
         }
@@ -34,7 +34,9 @@ public class AuthInterceptor implements RequestInterceptor {
 
     private String getBodyString(byte[] body, String path) {
         Gson gson = new Gson();
-        return gson.toJson(gson.fromJson(new String(body), Objects.requireNonNull(MethodEnum.getSerializeClass(path))));
+        return gson.toJson(gson.fromJson(new String(body),
+                Objects.requireNonNull(MethodEnum.getSerializeClass(path))
+        ));
     }
 
     private String getPayload(byte[] bodyTemplate) {
@@ -42,11 +44,11 @@ public class AuthInterceptor implements RequestInterceptor {
     }
 
     private String calcSignature(String data) {
-        final String HMAC_SHA512 = "HmacSHA512";
-        SecretKeySpec secretKeySpec = new SecretKeySpec(API_SECRET.getBytes(), HMAC_SHA512);
+        final String Hmac_Sha512 = "HmacSHA512";
+        SecretKeySpec secretKeySpec = new SecretKeySpec(apiSecret.getBytes(), Hmac_Sha512);
         Mac mac = null;
         try {
-            mac = Mac.getInstance(HMAC_SHA512);
+            mac = Mac.getInstance(Hmac_Sha512);
             mac.init(secretKeySpec);
         } catch (Exception e) {
             System.out.println(e.getMessage());

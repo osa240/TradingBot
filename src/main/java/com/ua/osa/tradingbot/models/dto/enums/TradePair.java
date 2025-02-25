@@ -1,5 +1,8 @@
 package com.ua.osa.tradingbot.models.dto.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum TradePair {
     DBTC_DUSDT,
     BTC_USDT,
@@ -8,7 +11,7 @@ public enum TradePair {
     ETH_USD
     ;
 
-    String description;
+    private String description;
 
     TradePair() {
     }

@@ -7,15 +7,14 @@ import com.ua.osa.tradingbot.models.entity.StrategyStatistic;
 import com.ua.osa.tradingbot.repository.OrderBookStatisticRepository;
 import com.ua.osa.tradingbot.repository.StrategyStatisticRepository;
 import com.ua.osa.tradingbot.services.indicators.IndicatorEnum;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -124,7 +123,9 @@ public class StrategyStatisticServiceImpl implements StrategyStatisticService {
         }
     }
 
-    private void createNewTradingRecord(StrategyStatistic statistic, List<TradingRecord> tradingRecords, int index) {
+    private void createNewTradingRecord(StrategyStatistic statistic,
+                                        List<TradingRecord> tradingRecords,
+                                        int index) {
         TradingRecord newTradingRecord = new TradingRecord();
         newTradingRecord.setIndicator(IndicatorEnum.getNameByIndex(index));
         newTradingRecord.setTimestampOpen(statistic.getTimestamp());

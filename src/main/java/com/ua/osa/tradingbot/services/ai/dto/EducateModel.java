@@ -53,7 +53,8 @@ public class EducateModel {
     }
 
     public double[] getFuture() {
-        return new double[]{rsi, macd, bbMiddle, bbUpper, bbLower, stochasticK, volumeStock, volumeAmount};
+        return new double[]{rsi, macd, bbMiddle, bbUpper, bbLower,
+                stochasticK, volumeStock, volumeAmount};
     }
 
     private boolean isNotNaN(double data) {
@@ -62,14 +63,14 @@ public class EducateModel {
 
     @Override
     public String toString() {
-        return "EducateModel{" +
-                "label=" + label +
-                ", rsi=" + rsi +
-                ", macd=" + macd +
-                ", bbMiddle=" + bbMiddle +
-                ", bbUpper=" + bbUpper +
-                ", bbLower=" + bbLower +
-                ", stochasticK=" + stochasticK +
-                '}';
+        return "EducateModel{"
+                + "label=" + label
+                + ", rsi=" + rsi
+                + ", macd=" + macd
+                + ", bbMiddle=" + bbMiddle
+                + ", bbUpper=" + bbUpper
+                + ", bbLower=" + bbLower
+                + ", stochasticK=" + stochasticK
+                + '}';
     }
 }

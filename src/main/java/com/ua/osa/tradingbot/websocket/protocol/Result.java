@@ -8,5 +8,5 @@ import lombok.ToString;
 @Setter
 @ToString
 public class Result {
-        private String status;
-    }
+    private String status;
+}

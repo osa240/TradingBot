@@ -9,10 +9,13 @@ import com.google.gson.Gson;
 import com.ua.osa.tradingbot.models.dto.enums.MethodEnum;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 public class AuthInterceptor implements RequestInterceptor {
-    private static final String API_KEY = "******";
-    private static final String API_SECRET = "******";
+    @Value("${whitebit.api.key}")
+    private String API_KEY;
+    @Value("${whitebit.api.secret}")
+    private String API_SECRET;
 
     @Override
     public void apply(RequestTemplate requestTemplate) {
@@ -38,7 +41,7 @@ public class AuthInterceptor implements RequestInterceptor {
         return Base64.getEncoder().encodeToString(bodyTemplate);
     }
 
-    private static String calcSignature(String data) {
+    private String calcSignature(String data) {
         final String HMAC_SHA512 = "HmacSHA512";
         SecretKeySpec secretKeySpec = new SecretKeySpec(API_SECRET.getBytes(), HMAC_SHA512);
         Mac mac = null;

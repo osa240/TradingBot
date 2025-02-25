@@ -5,7 +5,6 @@ import static com.ua.osa.tradingbot.AppProperties.IS_BUY_ALREADY;
 import com.ua.osa.tradingbot.config.TelegramConfig;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
